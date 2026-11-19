@@ -1,0 +1,2272 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>خريطة لوطات المخزن</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ECEFF2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E151B" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="لوطات المخزن">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a warehouse floor plan. Summary first (headline + status chips that filter), then the board of parts split by an aisle, then bottom sheets: one lot with its archive, and the layout. */
+:root {
+  --bg: #ECEFF2;
+  --surface: #FFFFFF;
+  --sunken: #F3F5F7;
+  --ink: #131E28;
+  --muted: #566573;
+  --line: #CFD6DC;
+  --accent: #1F55A3;
+  --on-accent: #FFFFFF;
+  --note-bg: #E7EEF8;
+  --note-fg: #21436E;
+  --clean-bg: #E0F0E4;
+  --clean-fg: #1A5A2F;
+  --clean-line: #86BE97;
+  --dead-bg: #FAE9C8;
+  --dead-fg: #6F4300;
+  --dead-line: #DCAE55;
+  --live-bg: #F9D9D5;
+  --live-fg: #92170E;
+  --live-line: #E3897F;
+  --scrim: rgb(10 18 26 / .5);
+  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E151B;
+    --surface: #16202A;
+    --sunken: #111A22;
+    --ink: #E5ECF1;
+    --muted: #9AABB8;
+    --line: #2B3A47;
+    --accent: #7FB2F3;
+    --on-accent: #0A1620;
+    --note-bg: #14253A;
+    --note-fg: #AACBF4;
+    --clean-bg: #15332A;
+    --clean-fg: #8DD6A4;
+    --clean-line: #2F6C4D;
+    --dead-bg: #38290F;
+    --dead-fg: #F2C56C;
+    --dead-line: #7C5C1F;
+    --live-bg: #43201D;
+    --live-fg: #FFA197;
+    --live-line: #8E3A33;
+    --scrim: rgb(0 0 0 / .62);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E151B;
+  --surface: #16202A;
+  --sunken: #111A22;
+  --ink: #E5ECF1;
+  --muted: #9AABB8;
+  --line: #2B3A47;
+  --accent: #7FB2F3;
+  --on-accent: #0A1620;
+  --note-bg: #14253A;
+  --note-fg: #AACBF4;
+  --clean-bg: #15332A;
+  --clean-fg: #8DD6A4;
+  --clean-line: #2F6C4D;
+  --dead-bg: #38290F;
+  --dead-fg: #F2C56C;
+  --dead-line: #7C5C1F;
+  --live-bg: #43201D;
+  --live-fg: #FFA197;
+  --live-line: #8E3A33;
+  --scrim: rgb(0 0 0 / .62);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.55 var(--font-body);
+  padding-block: 14px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust: 100%;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible,
+.seg-opt input:focus-visible + .seg-face { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; display: inline-block; }
+.ic { width: 14px; height: 14px; flex: none; }
+.pulse { transform-box: fill-box; transform-origin: center; }
+
+/* shared status colours: set --cb / --cf / --cl, used by cells, pills and the status picker */
+.s-clean { --cb: var(--clean-bg); --cf: var(--clean-fg); --cl: var(--clean-line); }
+.s-dead { --cb: var(--dead-bg); --cf: var(--dead-fg); --cl: var(--dead-line); }
+.s-live { --cb: var(--live-bg); --cf: var(--live-fg); --cl: var(--live-line); }
+.s-unchecked { --cb: var(--surface); --cf: var(--ink); --cl: var(--muted); }
+
+.wrap { max-width: 1120px; margin-inline: auto; display: grid; gap: 14px; }
+.wrap > *, main > * { min-width: 0; }
+main { display: grid; gap: 10px; }
+
+/* header */
+.top { display: grid; gap: 12px; max-width: 780px; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.eyebrow { margin: 0 0 2px; font-size: 13px; font-weight: 500; color: var(--muted); }
+h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; text-wrap: balance; }
+.icon-btn {
+  display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px;
+  border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.icon-btn:disabled { opacity: .5; cursor: default; }
+.icon-btn.small { width: 40px; height: 40px; border-radius: 10px; color: var(--live-fg); border-color: var(--live-line); background: transparent; }
+.btn-export {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+  border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+  font-size: 14px; font-weight: 700;
+}
+.btn-export:disabled { opacity: .6; cursor: default; }
+.headline {
+  margin: 0; display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface);
+  font-size: 16px; font-weight: 600; line-height: 1.4;
+}
+.headline .ic { width: 20px; height: 20px; }
+.headline[data-tone="live"] { background: var(--live-bg); border-color: var(--live-line); color: var(--live-fg); }
+.headline[data-tone="dead"] { background: var(--dead-bg); border-color: var(--dead-line); color: var(--dead-fg); }
+.headline[data-tone="clean"] { background: var(--clean-bg); border-color: var(--clean-line); color: var(--clean-fg); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding-inline: 12px 8px;
+  border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface);
+  font-size: 14px; font-weight: 600;
+}
+.chip .ic { width: 16px; height: 16px; }
+.chip b {
+  min-width: 26px; padding: 1px 7px; border-radius: 999px; background: var(--sunken);
+  font-size: 12.5px; font-weight: 600; text-align: center;
+}
+.chip[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.chip.s-live .ic { color: var(--live-fg); }
+.chip.s-dead .ic { color: var(--dead-fg); }
+.chip.s-clean .ic { color: var(--clean-fg); }
+.chip.s-unchecked .ic { color: var(--muted); }
+.chip.s-live[aria-pressed="true"] { background: var(--live-bg); }
+.chip.s-dead[aria-pressed="true"] { background: var(--dead-bg); }
+.chip.s-clean[aria-pressed="true"] { background: var(--clean-bg); }
+
+.banner {
+  max-width: 780px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px;
+  padding: 10px 14px; border-radius: 12px; background: var(--note-bg); color: var(--note-fg);
+  font-size: 14px; font-weight: 500;
+}
+.banner[data-tone="warn"] { background: var(--dead-bg); color: var(--dead-fg); }
+.banner p { margin: 0; flex: 1 1 220px; min-width: 0; }
+
+/* board tools */
+.tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tools-lbl { font-size: 13px; font-weight: 600; color: var(--muted); }
+.viewseg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.viewseg button { min-height: 40px; padding: 0 16px; border: 0; background: transparent; font-size: 14px; font-weight: 600; }
+.viewseg button + button { border-inline-start: 1.5px solid var(--line); }
+.viewseg button:focus-visible { outline-offset: -4px; }
+.viewseg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+/* the floor: parts split by an aisle */
+.floor { overflow-x: auto; padding: 3px; margin: -3px; }
+.board { display: grid; gap: 10px; width: max-content; min-width: 100%; }
+.board[data-view="compact"] { --rowno-w: 18px; --cell-min: 0px; --gap: 2px; }
+.board[data-view="detail"] { --rowno-w: 26px; --cell-min: 62px; --gap: 4px; }
+.part { display: grid; gap: 6px; min-width: 0; }
+.part-head { display: flex; align-items: baseline; justify-content: space-between; gap: 2px 12px; flex-wrap: wrap; }
+.part-head h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.part-meta { font-size: 13px; color: var(--muted); }
+.grid { display: grid; grid-template-columns: var(--rowno-w) repeat(var(--cols, 14), minmax(var(--cell-min), 1fr)); gap: var(--gap); }
+.colno, .rowno {
+  display: flex; align-items: center; justify-content: center; direction: ltr;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--muted);
+}
+.colno { min-height: 16px; }
+.aisle {
+  display: grid; place-items: center; min-height: 30px; border-radius: 8px; background-color: var(--sunken);
+  background-image: repeating-linear-gradient(135deg, transparent 0 9px, var(--line) 9px 10px);
+}
+.aisle span { padding: 1px 16px; border-radius: 999px; background: var(--bg); color: var(--muted); font-size: 12.5px; font-weight: 600; }
+
+.cell {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 4px;
+  min-width: 0; min-height: 80px; padding: 7px 4px 6px;
+  border: 1.5px solid var(--cl, var(--line)); border-radius: 10px;
+  background: var(--cb, var(--surface)); color: var(--cf, var(--ink));
+  text-align: start; line-height: 1.2;
+}
+.cell.s-empty { --cb: transparent; --cf: var(--muted); --cl: var(--line); border-style: dashed; }
+.cell.skel { opacity: .5; }
+.cell[data-dim="1"] { opacity: .3; }
+.c-id, .c-date { align-self: flex-start; max-width: 100%; }
+.c-id { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-date { font-size: 10px; font-weight: 500; white-space: nowrap; }
+.c-date.nodate { font-family: var(--font-body); opacity: .8; }
+.c-state { display: flex; align-items: center; gap: 4px; margin-top: auto; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.s-empty .c-state, .s-unchecked .c-state { font-weight: 600; }
+.board[data-view="compact"] .cell {
+  min-height: 34px; padding: 0; gap: 0; justify-content: center; align-items: center; border-width: 1px; border-radius: 6px;
+}
+.board[data-view="compact"] .c-id, .board[data-view="compact"] .c-date, .board[data-view="compact"] .c-word { display: none; }
+.board[data-view="compact"] .c-state { margin: 0; }
+.board[data-view="detail"] .s-unchecked .c-state .ic { display: none; }
+
+.sync { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+/* bottom sheets */
+dialog.sheet {
+  width: 100%; max-width: 520px; max-height: calc(100% - 16px); margin: auto auto 0; padding: 0;
+  border: 0; border-radius: 20px 20px 0 0; background: var(--surface); color: var(--ink); overflow-y: auto;
+}
+dialog.sheet::backdrop { background: var(--scrim); }
+.sheet-in {
+  display: grid; gap: 16px; padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.sheet-head h2 { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 700; text-wrap: balance; }
+.sheet-head h2:focus { outline: none; }
+.sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+fieldset.bare { display: grid; gap: 16px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.field label, .lbl { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.opt { font-weight: 400; }
+input[type="text"], input[type="date"], textarea {
+  width: 100%; min-height: 48px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: var(--sunken); color: var(--ink); font-size: 16px; font-family: var(--font-body);
+}
+input:focus-visible, textarea:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+textarea { min-height: 84px; resize: vertical; }
+.hint { margin: 6px 0 0; min-height: 1.4em; font-size: 13px; color: var(--muted); }
+.err { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--live-bg); color: var(--live-fg); font-size: 14px; font-weight: 600; }
+
+.seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.seg-opt { position: relative; display: block; min-width: 0; }
+.seg-opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.seg-face {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 78px; padding: 8px 4px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: var(--sunken); color: var(--muted); font-size: 13px; font-weight: 600; line-height: 1.25; text-align: center;
+}
+.seg-face .ic { width: 20px; height: 20px; }
+.seg-opt input:checked + .seg-face { background: var(--cb); color: var(--cf); border-color: var(--cl); box-shadow: 0 0 0 1px var(--cl); }
+
+.actions { display: grid; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px;
+  border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); font-size: 16px; font-weight: 700;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.danger { background: transparent; border-color: var(--live-line); color: var(--live-fg); }
+.btn.danger[data-armed="1"] { background: var(--live-bg); }
+.btn.small { min-height: 38px; padding: 0 14px; font-size: 14px; }
+.btn.small[data-armed="1"] { background: var(--surface); }
+.btn:disabled { opacity: .55; cursor: default; }
+
+/* archive of one cell */
+.archive { display: grid; gap: 10px; padding-top: 16px; border-top: 1.5px solid var(--line); }
+.arch-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.arch-head h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.arch-count { font-size: 13px; color: var(--muted); }
+.arch-empty { margin: 0; padding: 12px; border: 1.5px dashed var(--line); border-radius: 12px; color: var(--muted); font-size: 14px; }
+.log { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 8px; }
+.log-item { display: grid; gap: 6px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--sunken); }
+.log-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.tag { padding: 1px 9px; border-radius: 999px; background: var(--note-bg); color: var(--note-fg); font-size: 12px; font-weight: 700; }
+.tag.clear { background: var(--dead-bg); color: var(--dead-fg); }
+.log-main { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 14px; }
+.log-lead { color: var(--muted); }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px 2px 9px; border-radius: 999px;
+  border: 1.5px solid var(--cl); background: var(--cb); color: var(--cf); font-size: 13px; font-weight: 700;
+}
+.log-note { margin: 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.log-by { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+/* layout sheet */
+.stepper { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; }
+.stepper .lbl { margin: 0; font-size: 15px; color: var(--ink); flex: 1 1 auto; }
+.step-ctl { display: inline-flex; align-items: center; gap: 4px; }
+.step-ctl button {
+  width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface);
+  font-size: 22px; line-height: 1; font-weight: 600;
+}
+.step-ctl button:disabled { opacity: .4; cursor: default; }
+.step-ctl output { min-width: 44px; text-align: center; font-size: 20px; font-weight: 700; }
+.parts-block { display: grid; gap: 10px; }
+.sect { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+.parts { display: grid; gap: 10px; }
+.part-row { display: flex; align-items: center; gap: 8px; }
+.part-row .stepper { flex: 1 1 auto; min-width: 0; }
+
+.toast-wrap {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; pointer-events: none;
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.toast { padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 600; text-align: center; }
+
+@media (min-width: 640px) {
+  h1 { font-size: 30px; }
+  .board[data-view="detail"] { --gap: 6px; }
+  .board[data-view="detail"] .cell { min-height: 90px; padding: 9px 5px 8px; }
+  .board[data-view="detail"] .c-id { font-size: 15px; }
+  dialog.sheet { margin: auto; border-radius: 18px; }
+}
+@media (min-width: 420px) {
+  .actions.two { grid-template-columns: 1.6fr 1fr; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cell .pulse, .headline .pulse { animation: ping 1.8s ease-out infinite; }
+  @keyframes ping { 0% { transform: scale(.55); opacity: 1; } 75%, 100% { transform: scale(1.35); opacity: 0; } }
+  dialog.sheet[open] { animation: rise .18s ease-out; }
+  @keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .cell { transition: transform .08s ease; }
+  .cell:active { transform: scale(.97); }
+}
+</style>
+
+<style>
+/* standalone shell: setup / sync dialog */
+#dlg-sync .sheet-in { grid-template-columns: minmax(0, 1fr); }
+.sv { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.lead { margin: 0; font-size: 15px; color: var(--muted); }
+.fine { margin: 0; font-size: 12.5px; color: var(--muted); }
+.ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+textarea.ltr, input.ltr { display: block; text-align: left; font-family: var(--font-mono); font-size: 14px; }
+#m-link { direction: ltr; text-align: left; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.linkbox { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.row2.namerow { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+pre.rules {
+  margin: 8px 0; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface);
+  font: 12.5px/1.55 var(--font-mono); direction: ltr; text-align: left; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+  max-width: 100%; box-sizing: border-box;
+}
+details.steps { border: 1.5px solid var(--line); border-radius: 12px; background: var(--sunken); padding: 0 12px; }
+details.steps > summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+details.steps ol { margin: 0; padding: 0 22px 14px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; font-size: 14.5px; }
+details.steps ol > li { min-width: 0; }
+.chk { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; }
+.chk input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; }
+</style>
+</head>
+<body>
+<div id="app" dir="rtl" lang="ar">
+  <div class="wrap">
+    <header class="top">
+      <div class="top-row">
+        <div>
+          <p class="eyebrow" id="eyebrow">المخزن</p>
+          <h1>خريطة اللوطات</h1>
+        </div>
+        <div class="top-actions">
+          <button type="button" class="btn-export" id="btn-export" hidden>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg>
+            <span id="export-label">تصدير إكسل</span>
+          </button>
+          <button type="button" class="icon-btn" id="btn-sync" aria-label="المزامنة والنسخ الاحتياطي"></button>
+          <button type="button" class="icon-btn" id="btn-settings" aria-label="تعديل تقسيمة المخزن">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="headline" id="headline" data-tone="idle" aria-live="polite">جارٍ تحميل اللوطات…</p>
+      <div class="chips" id="chips" role="group" aria-label="تصفية اللوطات حسب الحالة"></div>
+    </header>
+    <div class="banner" id="banner" hidden></div>
+    <main>
+      <div class="tools">
+        <span class="tools-lbl" id="view-lbl">طريقة العرض</span>
+        <div class="viewseg" role="group" aria-labelledby="view-lbl">
+          <button type="button" data-view="compact" aria-pressed="true">مضغوط</button>
+          <button type="button" data-view="detail" aria-pressed="false">بالتواريخ</button>
+        </div>
+      </div>
+      <div class="floor"><div class="board" id="board" data-view="compact" aria-busy="true"></div></div>
+      <p class="sync" id="sync"></p>
+    </main>
+  </div>
+
+  <div class="toast-wrap" aria-live="polite"><div class="toast" id="toast" hidden></div></div>
+
+  <dialog id="dlg-lot" class="sheet" aria-labelledby="lot-title">
+    <form id="lot-form" class="sheet-in" novalidate autocomplete="off">
+      <div class="sheet-head">
+        <div>
+          <h2 id="lot-title" tabindex="-1">لوط</h2>
+          <p class="sub" id="lot-sub"></p>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <fieldset class="bare" id="lot-fields">
+        <div class="field">
+          <label for="f-produced">تاريخ الإنتاج</label>
+          <input id="f-produced" type="date">
+          <p class="hint" id="f-age"></p>
+        </div>
+        <div>
+          <p class="lbl" id="seg-lbl">حالة النشاط الحشري</p>
+          <div class="seg" id="seg" role="radiogroup" aria-labelledby="seg-lbl"></div>
+        </div>
+        <div class="field">
+          <label for="f-inspected">تاريخ الفحص</label>
+          <input id="f-inspected" type="date">
+        </div>
+        <div class="field">
+          <label for="f-label">رقم اللوط أو اسمه <span class="opt">(اختياري)</span></label>
+          <input id="f-label" type="text" maxlength="24">
+        </div>
+        <div class="field">
+          <label for="f-notes">ملاحظات <span class="opt">(اختياري)</span></label>
+          <textarea id="f-notes" rows="2" maxlength="300"></textarea>
+        </div>
+      </fieldset>
+      <p class="err" id="lot-err" role="alert" hidden></p>
+      <div class="actions two">
+        <button type="submit" class="btn primary" id="btn-save">حفظ</button>
+        <button type="button" class="btn danger" id="btn-clear" data-armed="0">تفريغ الخلية</button>
+      </div>
+      <section class="archive" aria-labelledby="arch-h">
+        <div class="arch-head"><h3 id="arch-h">أرشيف الخلية</h3><span class="arch-count" id="arch-count"></span></div>
+        <div id="arch-body" aria-live="polite"></div>
+      </section>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-set" class="sheet" aria-labelledby="set-title">
+    <form id="set-form" class="sheet-in" novalidate autocomplete="off">
+      <div class="sheet-head">
+        <h2 id="set-title" tabindex="-1">تقسيمة المخزن</h2>
+        <button type="button" class="icon-btn" data-close aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="field">
+        <label for="s-name">اسم المخزن <span class="opt">(اختياري)</span></label>
+        <input id="s-name" type="text" maxlength="40">
+      </div>
+      <div class="stepper">
+        <span class="lbl" id="lbl-cols">عدد اللوطات في كل صف</span>
+        <div class="step-ctl" role="group" aria-labelledby="lbl-cols">
+          <button type="button" data-step="cols" data-d="-1" aria-label="تقليل عدد اللوطات في الصف">−</button>
+          <output id="s-cols" class="num">14</output>
+          <button type="button" data-step="cols" data-d="1" aria-label="زيادة عدد اللوطات في الصف">+</button>
+        </div>
+      </div>
+      <div class="parts-block">
+        <p class="sect" id="parts-lbl">الأجزاء وعدد الصفوف في كل جزء (يفصل بين كل جزأين ممر)</p>
+        <div class="parts" id="s-parts" role="group" aria-labelledby="parts-lbl"></div>
+        <button type="button" class="btn small" id="btn-add-part"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>إضافة جزء</span></button>
+      </div>
+      <p class="hint" id="s-total"></p>
+      <p class="err" id="set-err" role="alert" hidden></p>
+      <div class="actions">
+        <button type="submit" class="btn primary" id="btn-set-save">حفظ التقسيمة</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-sync" class="sheet" aria-labelledby="sync-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="sync-title" tabindex="-1">المزامنة</h2>
+        <button type="button" class="icon-btn" id="sync-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+
+      <section class="sv" id="v-welcome" hidden>
+        <p class="lead">اكتب اسمك ثم اختر طريقة الاستخدام. يمكنك تغييرها لاحقًا من زر السحابة أعلى الصفحة.</p>
+        <div class="field">
+          <label for="w-name">اسمك</label>
+          <input id="w-name" type="text" maxlength="24" autocomplete="name">
+          <p class="hint">يُسجَّل اسمك مع كل تعديل في أرشيف اللوط.</p>
+        </div>
+        <p class="err" id="w-err" role="alert" hidden></p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="w-local">ابدأ على هذا الجهاز</button>
+          <button type="button" class="btn" id="w-cloud">ربط مزامنة بين الأجهزة</button>
+          <button type="button" class="btn" id="w-join">لدي رابط مشاركة</button>
+        </div>
+        <p class="fine">على هذا الجهاز: تُحفظ البيانات في الهاتف فقط. المزامنة: تظهر البيانات على كل الأجهزة، وتحتاج مشروع Firebase مجانيًا تُجهّزه مرة واحدة.</p>
+      </section>
+
+      <section class="sv" id="v-main" hidden>
+        <p class="lead" id="m-status"></p>
+        <div class="linkbox" id="m-share" hidden>
+          <label class="lbl" for="m-link">رابط المشاركة</label>
+          <input id="m-link" type="text" readonly dir="ltr">
+          <div class="row2">
+            <button type="button" class="btn small" id="m-copy">نسخ الرابط</button>
+            <button type="button" class="btn small" id="m-sharebtn">مشاركة</button>
+          </div>
+          <p class="fine">أي شخص لديه هذا الرابط يستطيع عرض بيانات المخزن وتعديلها. أرسله لموظفيك فقط.</p>
+        </div>
+        <div class="actions" id="m-local" hidden>
+          <button type="button" class="btn primary" id="m-connect">ربط مزامنة بين الأجهزة</button>
+          <button type="button" class="btn" id="m-joinbtn">لدي رابط مشاركة</button>
+        </div>
+        <div class="field">
+          <label for="m-name">اسمك في الأرشيف</label>
+          <div class="row2 namerow"><input id="m-name" type="text" maxlength="24"><button type="button" class="btn small" id="m-savename">حفظ الاسم</button></div>
+        </div>
+        <div class="field">
+          <p class="lbl">نسخة احتياطية</p>
+          <div class="row2">
+            <button type="button" class="btn small" id="m-export">تصدير نسخة</button>
+            <button type="button" class="btn small" id="m-import">استيراد نسخة</button>
+          </div>
+          <input type="file" id="m-file" accept="application/json,.json" hidden>
+          <p class="hint" id="m-msg" aria-live="polite"></p>
+        </div>
+        <div class="field" id="m-dis-wrap" hidden>
+          <button type="button" class="btn small danger" id="m-disconnect" data-armed="0">فصل المزامنة</button>
+          <p class="hint">بعد الفصل يعود التطبيق إلى وضع الجهاز الواحد، وتبقى بيانات المخزن محفوظة في السحابة.</p>
+        </div>
+        <p class="fine" id="m-ver"></p>
+      </section>
+
+      <section class="sv" id="v-connect" hidden>
+        <p class="lead">تحتاج مرة واحدة إلى مشروع Firebase مجاني (حوالي ٥ دقائق). اتبع الخطوات ثم الصق الإعدادات في الخانة.</p>
+        <details class="steps" open>
+          <summary>خطوات تجهيز Firebase</summary>
+          <ol>
+            <li>افتح <span class="ltr">console.firebase.google.com</span> وسجّل الدخول بحساب Google، ثم اضغط <span class="ltr">Create a project</span>، واكتب أي اسم، وأوقف <span class="ltr">Google Analytics</span>.</li>
+            <li>من القائمة اختر <span class="ltr">Build ← Firestore Database ← Create database</span>، واختر أقرب منطقة، ثم اختر <span class="ltr">Start in production mode</span> وأكمل حتى ينتهي الإنشاء.</li>
+            <li>افتح تبويب <span class="ltr">Rules</span>، وامسح المكتوب، والصق القواعد التالية ثم اضغط <span class="ltr">Publish</span>:
+              <pre class="rules" id="rules-pre"></pre>
+              <button type="button" class="btn small" id="c-copyrules">نسخ القواعد</button></li>
+            <li>اضغط ⚙ <span class="ltr">Project settings ← General ← Your apps</span>، واختر أيقونة الويب <span class="ltr">&lt;/&gt;</span>، واكتب أي اسم، ثم <span class="ltr">Register app</span> (لا تفعّل Hosting).</li>
+            <li>انسخ الجزء الذي يبدأ بـ <span class="ltr">const firebaseConfig = {</span> والصقه في الخانة التالية.</li>
+          </ol>
+        </details>
+        <div class="field">
+          <label for="c-cfg">إعدادات Firebase</label>
+          <textarea id="c-cfg" class="ltr" rows="5" dir="ltr" spellcheck="false" placeholder="const firebaseConfig = { apiKey: &quot;...&quot;, projectId: &quot;...&quot;, appId: &quot;...&quot; };"></textarea>
+        </div>
+        <label class="chk" id="c-migrate-row" hidden><input type="checkbox" id="c-migrate" checked><span>نقل البيانات المسجّلة على هذا الجهاز إلى المخزن السحابي</span></label>
+        <p class="err" id="c-err" role="alert" hidden></p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="c-go">ربط وإنشاء مخزن جديد</button>
+          <button type="button" class="btn" id="c-back">رجوع</button>
+        </div>
+      </section>
+
+      <section class="sv" id="v-join" hidden>
+        <p class="lead">الصق رابط المشاركة الذي أرسله لك مسؤول المخزن.</p>
+        <div class="field">
+          <label for="j-link">رابط المشاركة</label>
+          <textarea id="j-link" class="ltr" rows="3" dir="ltr" spellcheck="false"></textarea>
+        </div>
+        <p class="err" id="j-err" role="alert" hidden></p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="j-go">انضمام</button>
+          <button type="button" class="btn" id="j-back">رجوع</button>
+        </div>
+      </section>
+    </div>
+  </dialog>
+</div>
+
+<script>
+/* standalone shell: first-run setup, optional cloud sync (Firestore), share link, backup, file saving.
+   The page script talks to this through window.__standalone. */
+(function () {
+  "use strict";
+  var SETUP_KEY = "wh-standalone-v1";
+  var LOCAL_KEY = "warehouse-lots-v2";
+  var FB_BASE = "https://www.gstatic.com/firebasejs/10.14.1/";
+  var APP_VERSION = "1.0";
+  var RULES = [
+    "rules_version = '2';",
+    "service cloud.firestore {",
+    "  match /databases/{database}/documents {",
+    "    match /warehouses/{wid}/{document=**} {",
+    "      allow read, write: if wid.size() >= 20;",
+    "    }",
+    "  }",
+    "}"
+  ].join("\n");
+  var ISO = /^\d{4}-\d{2}-\d{2}$/;
+  var LOTKEY = /^(\d{1,2})-(\d{1,2})-(\d{1,2})$/;
+  var STATUS = { clean: 1, dead: 1, live: 1 };
+  var QUEUE_MS = 4000;
+
+  function $(id) { return document.getElementById(id); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function todayISO() {
+    var d = new Date(), m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
+  }
+
+  /* ---------- setup (kept on this device) ---------- */
+  function cleanName(x) { return String(x == null ? "" : x).replace(/\s+/g, " ").trim().slice(0, 24); }
+  function validKey(k) { return typeof k === "string" && /^[a-z0-9]{20,64}$/.test(k); }
+  function cleanCfg(c) {
+    if (!c || typeof c !== "object") return null;
+    var out = {};
+    ["apiKey", "authDomain", "projectId", "appId"].forEach(function (k) {
+      if (typeof c[k] === "string" && c[k].trim()) out[k] = c[k].trim().slice(0, 200);
+    });
+    if (!out.apiKey || out.apiKey.length < 20 || !/^[A-Za-z0-9_\-]+$/.test(out.apiKey)) return null;
+    if (!out.projectId || !/^[a-z0-9\-]{4,40}$/.test(out.projectId)) return null;
+    if (!out.appId || out.appId.length < 10) return null;
+    return out;
+  }
+  function readSetup() {
+    var raw = lsGet(SETUP_KEY);
+    if (!raw) return null;
+    try {
+      var o = JSON.parse(raw), name = o && cleanName(o.name);
+      if (!name) return null;
+      if (o.mode === "cloud") {
+        var cfg = cleanCfg(o.cfg);
+        if (cfg && validKey(o.key)) return { mode: "cloud", name: name, cfg: cfg, key: o.key };
+      }
+      return { mode: "local", name: name };
+    } catch (e) { return null; }
+  }
+  function writeSetup(s) { return lsSet(SETUP_KEY, JSON.stringify(s)); }
+  function genKey() {
+    var A = "abcdefghjkmnpqrstuvwxyz23456789", out = "", buf = new Uint8Array(26);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    for (var i = 0; i < buf.length; i++) out += A.charAt(buf[i] % A.length);
+    return out;
+  }
+
+  /* ---------- share link: #s=<base64url of {c: firebase config, k: warehouse key}> ---------- */
+  function b64enc(str) {
+    var bytes = new TextEncoder().encode(str), bin = "";
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function b64dec(s) {
+    s = s.replace(/-/g, "+").replace(/_/g, "/");
+    while (s.length % 4) s += "=";
+    var bin = atob(s), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function makeShareLink(s) {
+    return location.origin + location.pathname + "#s=" + b64enc(JSON.stringify({ c: s.cfg, k: s.key }));
+  }
+  function parseShare(text) {
+    text = String(text || "").trim();
+    var m = text.match(/[#&?]s=([A-Za-z0-9_\-]+)/), tok = m ? m[1] : (/^[A-Za-z0-9_\-]{30,}$/.test(text) ? text : "");
+    if (!tok) return null;
+    try {
+      var o = JSON.parse(b64dec(tok)), cfg = cleanCfg(o && o.c);
+      if (cfg && validKey(o.k)) return { cfg: cfg, key: o.k };
+    } catch (e) { /* not a share link */ }
+    return null;
+  }
+  function parseConfigText(text) {
+    text = String(text || "").replace(/[“”„‟]/g, '"').replace(/[‘’‚‛]/g, "'");
+    var out = {};
+    ["apiKey", "authDomain", "projectId", "appId"].forEach(function (k) {
+      var m = text.match(new RegExp("[\"']?" + k + "[\"']?\\s*:\\s*[\"']([^\"']+)[\"']"));
+      if (m) out[k] = m[1].trim();
+    });
+    return cleanCfg(out);
+  }
+
+  /* ---------- saving files (Excel, backup) ---------- */
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+  function anchorSave(filename, blob, resolve) {
+    var url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = filename; a.rel = "noopener"; a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); if (a.remove) a.remove(); }, 4000);
+    resolve({ status: "saved" });
+  }
+  function saveFile(filename, blob) {
+    return new Promise(function (resolve, reject) {
+      if (isIOS() && navigator.share && navigator.canShare) {
+        var file = null;
+        try { file = new File([blob], filename, { type: blob.type || "application/octet-stream" }); } catch (e) { file = null; }
+        if (file && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: filename }).then(function () { resolve({ status: "saved" }); }, function (e) {
+            if (e && e.name === "AbortError") reject({ code: "declined" }); else anchorSave(filename, blob, resolve);
+          });
+          return;
+        }
+      }
+      anchorSave(filename, blob, resolve);
+    });
+  }
+
+  /* ---------- cleaning data from files and from other devices ---------- */
+  function cleanLotDoc(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var o = {};
+    if (typeof raw.label === "string" && raw.label.trim()) o.label = raw.label.trim().slice(0, 24);
+    if (typeof raw.produced === "string" && ISO.test(raw.produced)) o.produced = raw.produced;
+    if (typeof raw.status === "string" && STATUS[raw.status]) o.status = raw.status;
+    if (typeof raw.inspected === "string" && ISO.test(raw.inspected)) o.inspected = raw.inspected;
+    if (typeof raw.notes === "string" && raw.notes.trim()) o.notes = raw.notes.slice(0, 300);
+    if (raw.example === true) o.example = true;
+    return Object.keys(o).length ? o : null;
+  }
+  function cleanEntry(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var at = typeof raw.at === "string" ? raw.at : "";
+    if (!at || isNaN(new Date(at).getTime())) return null;
+    var e = {
+      id: typeof raw.id === "string" && /^[A-Za-z0-9_\-]{1,40}$/.test(raw.id) ? raw.id : genId(),
+      at: at,
+      t: raw.t === "clear" ? "clear" : "save"
+    };
+    if (typeof raw.by === "string" && raw.by.trim()) e.by = raw.by.trim().slice(0, 40);
+    if (typeof raw.p === "string" && ISO.test(raw.p)) e.p = raw.p;
+    if (typeof raw.s === "string" && STATUS[raw.s]) e.s = raw.s;
+    if (typeof raw.i === "string" && ISO.test(raw.i)) e.i = raw.i;
+    if (typeof raw.l === "string" && raw.l.trim()) e.l = raw.l.trim().slice(0, 24);
+    if (typeof raw.n === "string" && raw.n.trim()) e.n = raw.n.slice(0, 300);
+    return e;
+  }
+  function cleanLayout(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var cols = parseInt(raw.cols, 10);
+    if (!(cols >= 1 && cols <= 30)) return null;
+    if (!Array.isArray(raw.parts) || raw.parts.length < 1 || raw.parts.length > 6) return null;
+    var seen = {}, parts = [];
+    for (var i = 0; i < raw.parts.length; i++) {
+      var p = raw.parts[i], id = parseInt(p && p.id, 10), rows = parseInt(p && p.rows, 10);
+      if (!(id >= 1 && id <= 99) || seen[id] || !(rows >= 1 && rows <= 20)) return null;
+      seen[id] = 1;
+      parts.push({ id: id, rows: rows });
+    }
+    return { cols: cols, parts: parts, name: typeof raw.name === "string" ? raw.name.trim().slice(0, 40) : "" };
+  }
+
+  /* ---------- backup file: build, validate, import ---------- */
+  var api = null; /* set by the page: { snapshot(), store } */
+  function buildBackup() {
+    var snap = api.snapshot(), lots = {};
+    snap.lots.forEach(function (l, key) { var c = cleanLotDoc(l); if (c && LOTKEY.test(key)) lots[key] = c; });
+    return api.store.getAllArchive().then(function (m) {
+      var arch = {};
+      m.forEach(function (list, key) {
+        var cl = (list || []).map(cleanEntry).filter(Boolean);
+        if (cl.length && LOTKEY.test(key)) arch[key] = cl;
+      });
+      return { app: "warehouse-lots", v: 1, exportedAt: new Date().toISOString(), layout: cleanLayout(snap.layout), lots: lots, archive: arch };
+    });
+  }
+  function planImport(obj) {
+    if (!obj || typeof obj !== "object" || obj.app !== "warehouse-lots") throw new Error("not_backup");
+    var plan = { layout: cleanLayout(obj.layout), lots: [], entries: [] };
+    Object.keys(obj.lots || {}).forEach(function (k) {
+      if (!LOTKEY.test(k)) return;
+      var d = cleanLotDoc(obj.lots[k]);
+      if (d) plan.lots.push([k, d]);
+    });
+    Object.keys(obj.archive || {}).forEach(function (k) {
+      if (!LOTKEY.test(k) || !Array.isArray(obj.archive[k])) return;
+      obj.archive[k].forEach(function (e) { var ce = cleanEntry(e); if (ce) plan.entries.push([k, ce]); });
+    });
+    return plan;
+  }
+  function pump(jobs, n) {
+    return new Promise(function (resolve, reject) {
+      var i = 0, active = 0, failed = false;
+      function next() {
+        if (failed) return;
+        if (i >= jobs.length && active === 0) { resolve(); return; }
+        while (active < n && i < jobs.length) {
+          active++;
+          jobs[i++]().then(function () { active--; next(); }, function (e) { failed = true; reject(e); });
+        }
+      }
+      next();
+    });
+  }
+  function runImport(plan, st) {
+    var jobs = [], byLot = {};
+    if (plan.layout) jobs.push(function () { return st.saveLayout(plan.layout); });
+    plan.lots.forEach(function (x) { jobs.push(function () { return st.saveLot(x[0], x[1]); }); });
+    plan.entries.forEach(function (x) { (byLot[x[0]] = byLot[x[0]] || []).push(x[1]); });
+    Object.keys(byLot).forEach(function (k) {
+      jobs.push(function () {
+        return st.getArchive(k).then(function (have) {
+          var ids = {}, seq = Promise.resolve();
+          (have || []).forEach(function (e) { if (e && e.id) ids[e.id] = 1; });
+          byLot[k].forEach(function (e) { if (!ids[e.id]) seq = seq.then(function () { return st.appendArchive(k, e); }); });
+          return seq;
+        });
+      });
+    });
+    return pump(jobs, 4);
+  }
+  function localPlan() {
+    var raw = lsGet(LOCAL_KEY);
+    if (!raw) return null;
+    try {
+      var o = JSON.parse(raw), plan = planImport({ app: "warehouse-lots", layout: o.layout, lots: o.lots, archive: o.archive });
+      return plan.lots.length || plan.entries.length ? plan : null;
+    } catch (e) { return null; }
+  }
+
+  /* ---------- cloud store (Firestore). Same interface as the page's own stores. ---------- */
+  var fbPromise = null;
+  function loadFirebase() {
+    if (!fbPromise) {
+      fbPromise = Promise.all([import(FB_BASE + "firebase-app.js"), import(FB_BASE + "firebase-firestore.js")]).then(function (r) {
+        return { A: r[0], F: r[1] };
+      }, function (e) { fbPromise = null; throw e; });
+    }
+    return fbPromise;
+  }
+  var dbCache = {};
+  function openDb(cfg) {
+    var name = "wh-" + cfg.projectId;
+    if (!dbCache[name]) {
+      dbCache[name] = loadFirebase().then(function (m) {
+        var app, db;
+        try { app = m.A.getApp(name); } catch (e) { app = m.A.initializeApp(cfg, name); }
+        try {
+          db = m.F.initializeFirestore(app, {
+            localCache: m.F.persistentLocalCache({ tabManager: m.F.persistentMultipleTabManager() }),
+            experimentalAutoDetectLongPolling: true
+          });
+        } catch (e) { db = m.F.getFirestore(app); }
+        return { F: m.F, db: db };
+      }).then(null, function (e) { delete dbCache[name]; throw e; });
+    }
+    return dbCache[name];
+  }
+  var toastT = 0;
+  function toast(msg) {
+    var el = $("toast");
+    if (!el) return;
+    el.textContent = msg; el.hidden = false;
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { el.hidden = true; }, 3600);
+  }
+  /* A write resolves when the server confirms it, or after a few seconds when the device is offline
+     (the write stays queued and is sent on reconnect). A definite refusal rejects. */
+  function settleWrite(p) {
+    return new Promise(function (resolve, reject) {
+      var done = false, t = setTimeout(function () { if (!done) { done = true; resolve(); } }, navigator.onLine === false ? 0 : QUEUE_MS);
+      p.then(function () {
+        if (!done) { done = true; clearTimeout(t); resolve(); }
+      }, function (e) {
+        if (!done) { done = true; clearTimeout(t); reject(e); }
+        else toast("تعذّر حفظ آخر تعديل على السحابة. تحقق من إعدادات المزامنة.");
+      });
+    });
+  }
+  function getDocsSmart(x, q) {
+    var F = x.F;
+    if (navigator.onLine === false) return F.getDocsFromCache(q);
+    return new Promise(function (resolve, reject) {
+      var done = false, t = setTimeout(function () {
+        if (!done) { done = true; F.getDocsFromCache(q).then(resolve, reject); }
+      }, 5000);
+      F.getDocs(q).then(function (s) {
+        if (!done) { done = true; clearTimeout(t); resolve(s); }
+      }, function (e) {
+        if (!done) { done = true; clearTimeout(t); F.getDocsFromCache(q).then(resolve, function () { reject(e); }); }
+      });
+    });
+  }
+  function entryFrom(d) {
+    var v = d.data() || {}, o = {};
+    Object.keys(v).forEach(function (k) { if (k !== "lot") o[k] = v[k]; });
+    return o;
+  }
+  function makeCloudStore(cfg, key) {
+    function getDb() { return openDb(cfg); }
+    function col(x, name) { return x.F.collection(x.db, "warehouses", key, name); }
+    function ref(x, name, id) { return x.F.doc(x.db, "warehouses", key, name, id); }
+    return {
+      start: function (cb) {
+        var any = { lots: false, layout: false }, server = { lots: false, layout: false }, staleT = 0;
+        var timer = setTimeout(cb.slow, 10000);
+        function meta(which, snap) {
+          var m = snap.metadata || {};
+          any[which] = true;
+          if (!m.fromCache && !m.hasPendingWrites) { server[which] = true; cb.synced(); }
+          if (any.lots && any.layout) {
+            clearTimeout(timer);
+            cb.ready();
+            if (server.lots && server.layout) clearTimeout(staleT);
+            else if (!staleT) staleT = setTimeout(function () { if (!(server.lots && server.layout)) cb.slow(); }, 3000);
+          }
+        }
+        function fail(e) { clearTimeout(timer); cb.error(e); }
+        /* includeMetadataChanges: without it Firestore stays silent when the server confirms data that
+           equals the cached copy, so the app could never tell "up to date" from "cached". */
+        var OPTS = { includeMetadataChanges: true };
+        getDb().then(function (x) {
+          x.F.onSnapshot(col(x, "lots"), OPTS, function (snap) {
+            var m = new Map();
+            snap.docs.forEach(function (d) { m.set(d.id, d.data() || {}); });
+            cb.lots(m);
+            meta("lots", snap);
+          }, fail);
+          x.F.onSnapshot(ref(x, "config", "layout"), OPTS, function (snap) {
+            cb.layout(snap.exists() ? snap.data() : null);
+            meta("layout", snap);
+          }, fail);
+        }, fail);
+      },
+      saveLot: function (k, d) { return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "lots", k), d)); }); },
+      deleteLot: function (k) { return getDb().then(function (x) { return settleWrite(x.F.deleteDoc(ref(x, "lots", k))); }); },
+      saveLayout: function (l) { return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "config", "layout"), l)); }); },
+      getArchive: function (k) {
+        return getDb().then(function (x) {
+          return getDocsSmart(x, x.F.query(col(x, "entries"), x.F.where("lot", "==", k))).then(function (s) { return s.docs.map(entryFrom); });
+        });
+      },
+      appendArchive: function (k, e) {
+        return getDb().then(function (x) {
+          var data = { lot: k };
+          Object.keys(e).forEach(function (f) { data[f] = e[f]; });
+          return settleWrite(x.F.setDoc(ref(x, "entries", k + "_" + e.id), data));
+        });
+      },
+      getAllArchive: function () {
+        return getDb().then(function (x) {
+          return getDocsSmart(x, col(x, "entries")).then(function (s) {
+            var m = new Map();
+            s.docs.forEach(function (d) {
+              var lot = (d.data() || {}).lot;
+              if (typeof lot !== "string") return;
+              if (!m.has(lot)) m.set(lot, []);
+              m.get(lot).push(entryFrom(d));
+            });
+            return m;
+          });
+        });
+      }
+    };
+  }
+  /* connection test: a write that only the server can confirm */
+  function testCloud(cfg, key) {
+    return openDb(cfg).then(function (x) {
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject({ code: "timeout" }); }, 12000);
+        x.F.setDoc(x.F.doc(x.db, "warehouses", key, "config", "ping"), { t: Date.now() }).then(function () { clearTimeout(t); resolve(); }, function (e) { clearTimeout(t); reject(e); });
+      });
+    });
+  }
+  function diagnose(e) {
+    var c = String((e && (e.code || e.name)) || ""), m = String((e && e.message) || "");
+    if (/permission/i.test(c) || /permission/i.test(m)) return "رفض Firebase الكتابة. افتح Firestore ثم تبويب Rules والصق القواعد الموجودة في الخطوات، ثم اضغط Publish.";
+    if (c === "not-found" || c === "failed-precondition" || /does not exist/i.test(m)) return "قاعدة بيانات Firestore غير جاهزة. أنشئها من Build ثم Firestore Database ثم Create database، وأعد المحاولة.";
+    if (c === "invalid-argument" || /api.?key/i.test(m)) return "إعدادات Firebase غير صحيحة. انسخها من جديد من Project settings.";
+    if (c === "timeout" || c === "unavailable" || /offline|network/i.test(m)) return "تعذّر الوصول إلى Firebase. تأكد من الإنترنت ومن إنشاء قاعدة Firestore، ثم أعد المحاولة.";
+    if (/import|module|fetch|dynamically|load/i.test(c + " " + m)) return "تعذّر تحميل مكتبة Firebase. تحقق من الاتصال بالإنترنت وأعد المحاولة.";
+    return "تعذّر الاتصال بـ Firebase (" + (c || m || "خطأ غير معروف") + ").";
+  }
+
+  /* ---------- dialog ---------- */
+  var setup = readSetup(), share = parseShare(location.hash), readyResolve = function () {};
+  var pendingName = "", locked = !setup, dlg = null, backTo = "v-main";
+  var VIEWS = ["v-welcome", "v-main", "v-connect", "v-join"];
+  var TITLES = { "v-welcome": "مرحبًا بك", "v-main": "المزامنة والنسخ الاحتياطي", "v-connect": "ربط مزامنة بين الأجهزة", "v-join": "الانضمام برابط المشاركة" };
+  var ICON_CLOUD = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 010-8 5.5 5.5 0 0110.6 1.2A3.4 3.4 0 0117 18H7z"/></svg>';
+  var ICON_PHONE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2.2"/><path d="M10.5 17.5h3"/></svg>';
+
+  function show(view) {
+    VIEWS.forEach(function (v) { $(v).hidden = v !== view; });
+    $("sync-title").textContent = TITLES[view];
+    $("sync-close").hidden = locked;
+    if (!dlg.open) { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
+    dlg.scrollTop = 0;
+  }
+  function fail(id, msg) { var p = $(id); p.textContent = msg; p.hidden = false; }
+  function clearMsg(id) { var p = $(id); p.textContent = ""; p.hidden = true; }
+  function busy(btn, on, text) {
+    if (on) { btn.setAttribute("data-label", btn.textContent); btn.textContent = text; btn.disabled = true; }
+    else { btn.textContent = btn.getAttribute("data-label") || btn.textContent; btn.disabled = false; }
+  }
+  function arm(btn, armed, normal) {
+    btn.setAttribute("data-armed", "1"); btn.textContent = armed;
+    clearTimeout(btn._t);
+    btn._t = setTimeout(function () { btn.setAttribute("data-armed", "0"); btn.textContent = normal; }, 4000);
+  }
+  function msg(text) { var p = $("m-msg"); p.textContent = text; }
+  function finish(s, errId) {
+    if (!writeSetup(s)) { fail(errId, "تعذّر حفظ الإعدادات على هذا الجهاز. إن كنت في وضع التصفح الخاص فافتح التطبيق في نافذة عادية."); return; }
+    location.reload();
+  }
+  function currentName() { return setup ? setup.name : pendingName; }
+
+  function openWelcome() {
+    clearMsg("w-err");
+    show("v-welcome");
+    setTimeout(function () { try { $("w-name").focus(); } catch (e) { /* ignore */ } }, 50);
+  }
+  function openMain() {
+    if (!setup) return;
+    var cloud = setup.mode === "cloud";
+    $("m-status").textContent = cloud
+      ? "متصل بمخزن سحابي (مشروع " + setup.cfg.projectId + "). ما تسجله يظهر على كل الأجهزة المرتبطة."
+      : "وضع الجهاز الواحد: البيانات محفوظة على هذا الجهاز فقط.";
+    $("m-share").hidden = !cloud;
+    $("m-local").hidden = cloud;
+    $("m-dis-wrap").hidden = !cloud;
+    if (cloud) $("m-link").value = makeShareLink(setup);
+    $("m-sharebtn").hidden = !navigator.share;
+    $("m-name").value = setup.name;
+    $("m-ver").textContent = "الإصدار " + APP_VERSION + " · تطبيق مستقل";
+    msg("");
+    backTo = "v-main";
+    show("v-main");
+  }
+  function openConnect(from) {
+    backTo = from;
+    clearMsg("c-err");
+    $("c-cfg").value = "";
+    var has = !!localPlan();
+    $("c-migrate-row").hidden = !has;
+    $("c-migrate").checked = has;
+    show("v-connect");
+  }
+  function openJoin(from, prefill) {
+    backTo = from;
+    clearMsg("j-err");
+    $("j-link").value = prefill || "";
+    show("v-join");
+  }
+  function joinWith(sh, name, errId, btn) {
+    if (btn) busy(btn, true, "جارٍ الاتصال…");
+    testCloud(sh.cfg, sh.key).then(function () {
+      finish({ mode: "cloud", name: name, cfg: sh.cfg, key: sh.key }, errId);
+    }, function (e) {
+      if (btn) busy(btn, false);
+      fail(errId, diagnose(e));
+    });
+  }
+  function copyText(text, input) {
+    var done = function () { toast("تم النسخ"); };
+    var fallback = function () {
+      try { if (input) { input.focus(); input.select(); } document.execCommand("copy"); done(); } catch (e) { toast("تعذّر النسخ. انسخه يدويًا."); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+  }
+
+  function wire() {
+    dlg = $("dlg-sync");
+    $("rules-pre").textContent = RULES;
+    dlg.addEventListener("cancel", function (e) { if (locked) e.preventDefault(); });
+    dlg.addEventListener("click", function (e) { if (!locked && e.target === dlg) dlg.close(); });
+    $("sync-close").addEventListener("click", function () { dlg.close(); });
+
+    function takeName(id, errId) {
+      var n = cleanName($(id).value);
+      if (!n) { fail(errId, "اكتب اسمك أولًا."); $(id).focus(); return ""; }
+      clearMsg(errId);
+      return n;
+    }
+    $("w-local").addEventListener("click", function () {
+      var n = takeName("w-name", "w-err");
+      if (n) finish({ mode: "local", name: n }, "w-err");
+    });
+    $("w-cloud").addEventListener("click", function () {
+      var n = takeName("w-name", "w-err");
+      if (n) { pendingName = n; openConnect("v-welcome"); }
+    });
+    $("w-join").addEventListener("click", function () {
+      var n = takeName("w-name", "w-err");
+      if (!n) return;
+      pendingName = n;
+      if (share) joinWith(share, n, "w-err", $("w-join")); else openJoin("v-welcome", "");
+    });
+
+    $("m-copy").addEventListener("click", function () { copyText($("m-link").value, $("m-link")); });
+    $("m-sharebtn").addEventListener("click", function () {
+      navigator.share({ title: "خريطة لوطات المخزن", text: "رابط الانضمام إلى خريطة لوطات المخزن", url: $("m-link").value }).catch(function () { /* cancelled */ });
+    });
+    $("m-connect").addEventListener("click", function () { openConnect("v-main"); });
+    $("m-joinbtn").addEventListener("click", function () { openJoin("v-main", ""); });
+    $("m-savename").addEventListener("click", function () {
+      var n = cleanName($("m-name").value);
+      if (!n) { msg("اكتب اسمك أولًا."); return; }
+      if (n === setup.name) { msg("الاسم كما هو."); return; }
+      var s = { mode: setup.mode, name: n };
+      if (setup.mode === "cloud") { s.cfg = setup.cfg; s.key = setup.key; }
+      finish(s, "m-msg");
+    });
+    $("m-export").addEventListener("click", function () {
+      if (!api) { msg("لم يكتمل تحميل التطبيق بعد. حاول بعد لحظات."); return; }
+      msg("جارٍ التجهيز…");
+      buildBackup().then(function (b) {
+        return saveFile("warehouse-backup-" + todayISO() + ".json", new Blob([JSON.stringify(b, null, 1)], { type: "application/json" }));
+      }).then(function () { msg("تم تجهيز النسخة الاحتياطية."); }, function (e) {
+        msg(e && e.code === "declined" ? "" : "تعذّر تجهيز النسخة الاحتياطية.");
+      });
+    });
+    $("m-import").addEventListener("click", function () { $("m-file").value = ""; $("m-file").click(); });
+    $("m-file").addEventListener("change", function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (!api) { msg("لم يكتمل تحميل التطبيق بعد. حاول بعد لحظات."); return; }
+      var fr = new FileReader();
+      fr.onerror = function () { msg("تعذّرت قراءة الملف."); };
+      fr.onload = function () {
+        var plan;
+        try { plan = planImport(JSON.parse(String(fr.result))); } catch (e) { msg("الملف ليس نسخة احتياطية صالحة."); return; }
+        if (!plan.layout && !plan.lots.length && !plan.entries.length) { msg("لا توجد بيانات داخل الملف."); return; }
+        msg("جارٍ الاستيراد…");
+        runImport(plan, api.store).then(function () {
+          msg("تم استيراد " + plan.lots.length + " لوط و" + plan.entries.length + " سجل أرشيف.");
+        }, function () { msg("تعذّر إكمال الاستيراد. حاول مرة أخرى."); });
+      };
+      fr.readAsText(f);
+    });
+    $("m-disconnect").addEventListener("click", function () {
+      var b = this;
+      if (b.getAttribute("data-armed") !== "1") { arm(b, "تأكيد الفصل", "فصل المزامنة"); return; }
+      clearTimeout(b._t);
+      finish({ mode: "local", name: setup.name }, "m-msg");
+    });
+
+    $("c-copyrules").addEventListener("click", function () { copyText(RULES, null); });
+    $("c-back").addEventListener("click", function () { show(backTo); });
+    $("c-go").addEventListener("click", function () {
+      clearMsg("c-err");
+      var cfg = parseConfigText($("c-cfg").value);
+      if (!cfg) { fail("c-err", "لم أستطع قراءة إعدادات Firebase. انسخ كل ما بين القوسين { } من firebaseConfig والصقه كما هو."); return; }
+      var name = currentName(), key = genKey(), btn = $("c-go"), plan = (!$("c-migrate-row").hidden && $("c-migrate").checked) ? localPlan() : null;
+      busy(btn, true, "جارٍ اختبار الاتصال…");
+      testCloud(cfg, key).then(function () {
+        return plan ? runImport(plan, makeCloudStore(cfg, key)) : null;
+      }).then(function () {
+        finish({ mode: "cloud", name: name, cfg: cfg, key: key }, "c-err");
+      }, function (e) { busy(btn, false); fail("c-err", diagnose(e)); });
+    });
+    $("j-back").addEventListener("click", function () { show(backTo); });
+    $("j-go").addEventListener("click", function () {
+      clearMsg("j-err");
+      var sh = parseShare($("j-link").value);
+      if (!sh) { fail("j-err", "الرابط غير صحيح. انسخه كاملًا كما وصلك."); return; }
+      joinWith(sh, currentName(), "j-err", $("j-go"));
+    });
+
+    var sb = $("btn-sync");
+    sb.innerHTML = setup && setup.mode === "cloud" ? ICON_CLOUD : ICON_PHONE;
+    sb.setAttribute("aria-label", setup && setup.mode === "cloud" ? "المزامنة: متصل بمخزن سحابي" : "المزامنة: وضع الجهاز الواحد");
+    sb.addEventListener("click", function () { if (setup) openMain(); });
+
+    if (!setup) openWelcome();
+    else if (share && !(setup.mode === "cloud" && setup.key === share.key)) openJoin("v-main", location.href);
+    /* a share link opened while the app is already running only changes the address's #part */
+    window.addEventListener("hashchange", function () {
+      share = parseShare(location.hash);
+      if (share && setup && !(setup.mode === "cloud" && setup.key === share.key)) openJoin("v-main", location.href);
+    });
+  }
+
+  var ready = new Promise(function (res) { readyResolve = res; });
+  if (setup) readyResolve();
+  window.__standalone = {
+    ready: ready,
+    mode: setup ? setup.mode : "",
+    person: setup ? setup.name : "",
+    save: function (req) { return saveFile(req.filename, req.data); },
+    cloudStore: function () { return makeCloudStore(setup.cfg, setup.key); },
+    bind: function (a) { api = a; },
+    openSync: function () { openMain(); }
+  };
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
+
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () { /* offline start still works from the browser cache */ }); });
+  }
+})();
+</script>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  root.setAttribute("dir", "rtl");
+  root.setAttribute("lang", "ar");
+
+  /* helpers:start */
+  var WORD = { live: "حي", dead: "ميت", clean: "سليم", unchecked: "لم يُفحص", empty: "فاضي" };
+  var LONG = { live: "نشاط حي", dead: "نشاط ميت", clean: "سليم", unchecked: "لم يُفحص", empty: "فاضي" };
+  var LIMITS = { cols: 30, parts: 6, rows: 20, lots: 1000 };
+  var DEFAULT_LAYOUT = { cols: 14, parts: [{ id: 1, rows: 4 }, { id: 2, rows: 6 }], name: "" };
+  var ORD = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
+  var ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
+  var MAX_ENTRIES = 1500;
+
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function parseISO(s) {
+    var m = ISO.exec(typeof s === "string" ? s : "");
+    if (!m) return null;
+    var y = +m[1], mo = +m[2], d = +m[3], t = Date.UTC(y, mo - 1, d), c = new Date(t);
+    if (c.getUTCFullYear() !== y || c.getUTCMonth() !== mo - 1 || c.getUTCDate() !== d) return null;
+    return t;
+  }
+  function daysBetween(a, b) {
+    var ta = parseISO(a), tb = parseISO(b);
+    return ta === null || tb === null ? null : Math.round((tb - ta) / 86400000);
+  }
+  function fmtDate(iso, short) {
+    var m = ISO.exec(typeof iso === "string" ? iso : "");
+    if (!m) return "";
+    return m[3] + "/" + m[2] + "/" + (short ? m[1].slice(2) : m[1]);
+  }
+  function fmtDateTime(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  }
+  function fmtClock(ms) {
+    var d = new Date(ms);
+    return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  }
+  function plural(n, one, two, few, many) {
+    return n === 1 ? one : n === 2 ? two : (n >= 3 && n <= 10 ? n + " " + few : n + " " + many);
+  }
+  function lotsText(n) { return plural(n, "لوط واحد", "لوطين", "لوطات", "لوط"); }
+  function daysText(n) { return plural(n, "يوم واحد", "يومين", "أيام", "يومًا"); }
+  function monthsText(n) { return plural(n, "شهر", "شهرين", "أشهر", "شهرًا"); }
+  function rowsText(n) { return plural(n, "صف واحد", "صفان", "صفوف", "صف"); }
+  function entriesText(n) { return plural(n, "سجل واحد", "سجلان", "سجلات", "سجل"); }
+  function ageText(days) {
+    if (days === null) return "";
+    if (days < 0) return "تاريخ الإنتاج في المستقبل";
+    if (days === 0) return "أُنتج اليوم";
+    if (days === 1) return "أُنتج أمس";
+    var s = "العمر: " + daysText(days);
+    if (days >= 30) s += " (حوالي " + monthsText(Math.round(days / 30)) + ")";
+    return s;
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+    });
+  }
+  function clampInt(v, lo, hi, d) {
+    if (v === null || v === undefined || v === "") return d;
+    v = Math.round(Number(v));
+    if (!isFinite(v)) return d;
+    return Math.min(hi, Math.max(lo, v));
+  }
+  function partTitle(i) { return "الجزء " + (ORD[i] || (i + 1)); }
+  function lotKey(pid, r, c) { return pid + "-" + r + "-" + c; }
+  function parseKey(key) {
+    var m = /^(\d+)-(\d+)-(\d+)$/.exec(typeof key === "string" ? key : "");
+    return m ? { pid: +m[1], r: +m[2], c: +m[3] } : null;
+  }
+  function normalizeLot(raw) {
+    raw = raw && typeof raw === "object" ? raw : {};
+    var s = raw.status;
+    return {
+      label: typeof raw.label === "string" ? raw.label.slice(0, 24) : "",
+      produced: parseISO(raw.produced) !== null ? raw.produced : "",
+      status: s === "live" || s === "dead" || s === "clean" ? s : "",
+      inspected: parseISO(raw.inspected) !== null ? raw.inspected : "",
+      notes: typeof raw.notes === "string" ? raw.notes.slice(0, 300) : "",
+      example: raw.example === true
+    };
+  }
+  function normalizeLayout(raw) {
+    raw = raw && typeof raw === "object" ? raw : {};
+    var parts = [], seen = {};
+    if (Array.isArray(raw.parts)) {
+      raw.parts.slice(0, LIMITS.parts).forEach(function (p, i) {
+        p = p && typeof p === "object" ? p : {};
+        var id = clampInt(p.id, 1, 9999, i + 1);
+        while (seen[id]) id++;
+        seen[id] = true;
+        parts.push({ id: id, rows: clampInt(p.rows, 1, LIMITS.rows, 4) });
+      });
+    } else if (raw.rows !== undefined && raw.rows !== null) {
+      parts.push({ id: 1, rows: clampInt(raw.rows, 1, LIMITS.rows, 4) });
+    }
+    if (!parts.length) parts = DEFAULT_LAYOUT.parts.map(function (p) { return { id: p.id, rows: p.rows }; });
+    return {
+      cols: clampInt(raw.cols, 1, LIMITS.cols, DEFAULT_LAYOUT.cols),
+      parts: parts,
+      name: typeof raw.name === "string" ? raw.name.slice(0, 40) : ""
+    };
+  }
+  function totalLots(layout) {
+    return layout.parts.reduce(function (s, p) { return s + p.rows * layout.cols; }, 0);
+  }
+  function lotState(l) {
+    if (!l) return "empty";
+    if (l.status) return l.status;
+    return l.produced || l.label || l.notes ? "unchecked" : "empty";
+  }
+  function summarize(lots, layout) {
+    var out = { live: 0, dead: 0, clean: 0, unchecked: 0, empty: 0, total: totalLots(layout) };
+    layout.parts.forEach(function (p) {
+      for (var r = 1; r <= p.rows; r++) {
+        for (var c = 1; c <= layout.cols; c++) out[lotState(lots.get(lotKey(p.id, r, c)))]++;
+      }
+    });
+    return out;
+  }
+  /* occupied lots that are on screen now but would disappear under the new layout; stray docs nobody can see never block a save */
+  function outsideKeys(lots, oldL, newL) {
+    var oldRows = {}, newRows = {}, out = [], has = Object.prototype.hasOwnProperty;
+    oldL.parts.forEach(function (p) { oldRows[p.id] = p.rows; });
+    newL.parts.forEach(function (p) { newRows[p.id] = p.rows; });
+    lots.forEach(function (l, key) {
+      var k = parseKey(key);
+      if (!k || lotState(l) === "empty") return;
+      var wasShown = has.call(oldRows, k.pid) && k.r <= oldRows[k.pid] && k.c <= oldL.cols;
+      var willShow = has.call(newRows, k.pid) && k.r <= newRows[k.pid] && k.c <= newL.cols;
+      if (wasShown && !willShow) out.push(key);
+    });
+    return out;
+  }
+  function headline(c) {
+    if (c.total - c.empty === 0) return { tone: "idle", text: "لم يُسجَّل أي لوط بعد. اضغط على أي خلية للبدء." };
+    if (c.live > 0) return { tone: "live", text: "نشاط حشري حي في " + lotsText(c.live) };
+    if (c.dead > 0) return { tone: "dead", text: "لا يوجد نشاط حي. حشرات ميتة في " + lotsText(c.dead) };
+    if (c.clean > 0) return { tone: "clean", text: "لا يوجد نشاط حشري. اللوطات المفحوصة كلها سليمة." };
+    return { tone: "idle", text: "لم يُفحص أي لوط بعد." };
+  }
+  function validateLot(d) {
+    var today = todayISO();
+    if (!d.label && !d.produced && !d.status && !d.notes) return "أدخل تاريخ الإنتاج أو اختر الحالة أولًا.";
+    if (d.produced && parseISO(d.produced) === null) return "تاريخ الإنتاج غير صالح.";
+    if (d.produced && d.produced > today) return "تاريخ الإنتاج لا يمكن أن يكون في المستقبل.";
+    if (d.inspected && parseISO(d.inspected) === null) return "تاريخ الفحص غير صالح.";
+    if (d.inspected && d.inspected > today) return "تاريخ الفحص لا يمكن أن يكون في المستقبل.";
+    if (d.produced && d.inspected && d.inspected < d.produced) return "تاريخ الفحص قبل تاريخ الإنتاج.";
+    return "";
+  }
+  function sameLot(a, b) {
+    a = a || {}; b = b || {};
+    return ["label", "produced", "status", "inspected", "notes"].every(function (k) { return (a[k] || "") === (b[k] || ""); });
+  }
+
+  /* archive entries: one per save or clear, kept in archive/<lot key> */
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function makeEntry(type, snap, by) {
+    snap = snap || {};
+    var e = { id: newId(), at: new Date().toISOString(), t: type === "clear" ? "clear" : "save" };
+    if (by) e.by = by;
+    if (snap.produced) e.p = snap.produced;
+    if (snap.status) e.s = snap.status;
+    if (snap.inspected) e.i = snap.inspected;
+    if (snap.label) e.l = snap.label;
+    if (snap.notes) e.n = snap.notes;
+    return e;
+  }
+  function normalizeEntry(raw) {
+    raw = raw && typeof raw === "object" ? raw : {};
+    var s = raw.s;
+    return {
+      id: String(raw.id || ""),
+      at: typeof raw.at === "string" ? raw.at : "",
+      t: raw.t === "clear" ? "clear" : "save",
+      by: typeof raw.by === "string" ? raw.by : "",
+      p: parseISO(raw.p) !== null ? raw.p : "",
+      s: s === "live" || s === "dead" || s === "clean" ? s : "",
+      i: parseISO(raw.i) !== null ? raw.i : "",
+      l: typeof raw.l === "string" ? raw.l.slice(0, 24) : "",
+      n: typeof raw.n === "string" ? raw.n.slice(0, 300) : ""
+    };
+  }
+  function byAtDesc(a, b) { return a.at < b.at ? 1 : a.at > b.at ? -1 : 0; }
+  function appendEntry(list, entry) {
+    var next = (Array.isArray(list) ? list : []).concat([entry]);
+    return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next;
+  }
+  function archiveNote(entries, names, limit) {
+    if (!entries || !entries.length) return "";
+    var rows = entries.map(normalizeEntry).sort(byAtDesc);
+    var out = ["الأرشيف (" + entriesText(rows.length) + ")"];
+    rows.slice(0, limit).forEach(function (en) {
+      var bits = [fmtDateTime(en.at), en.t === "clear" ? "تفريغ الخلية" : "حفظ"];
+      if (en.s) bits.push(LONG[en.s]); else if (en.t === "save") bits.push(LONG.unchecked);
+      if (en.l) bits.push(en.l);
+      if (en.p) bits.push("إنتاج " + fmtDate(en.p));
+      if (en.i) bits.push("فحص " + fmtDate(en.i));
+      if (en.n) bits.push(en.n);
+      var who = en.by && names ? names.get(en.by) : "";
+      if (who) bits.push("بواسطة " + who);
+      out.push("• " + bits.join(" · "));
+    });
+    if (rows.length > limit) out.push("… و" + entriesText(rows.length - limit) + " أقدم في ورقة «الأرشيف».");
+    return out.join("\n");
+  }
+  /* helpers:end */
+
+  /* excel:start */
+  var XL = {
+    clean: { fill: "FFE0F0E4", font: "FF1A5A2F", line: "FF86BE97" },
+    dead: { fill: "FFFAE9C8", font: "FF6F4300", line: "FFDCAE55" },
+    live: { fill: "FFF9D9D5", font: "FF92170E", line: "FFE3897F" },
+    unchecked: { fill: "FFFFFFFF", font: "FF131E28", line: "FF566573" },
+    empty: { fill: "FFF3F5F7", font: "FF566573", line: "FFCFD6DC" }
+  };
+  var XL_BLUE = "FF1F55A3", XL_INK = "FF131E28", XL_MUTED = "FF566573", XL_FONT = "Arial";
+
+  function xlSolid(argb) { return { type: "pattern", pattern: "solid", fgColor: { argb: argb } }; }
+  function xlBox(argb) {
+    var s = { style: "thin", color: { argb: argb } };
+    return { top: s, left: s, bottom: s, right: s };
+  }
+  function xlDate(iso) { var t = parseISO(iso); return t === null ? null : new Date(t); }
+  function xlDateTime(iso) {
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? null : new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  }
+  function xlHead(cell, text) {
+    cell.value = text;
+    cell.fill = xlSolid(XL_BLUE);
+    cell.font = { name: XL_FONT, size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.border = xlBox(XL_BLUE);
+  }
+  function xlBody(cell, wrap, right) {
+    cell.font = { name: XL_FONT, size: 11, color: { argb: XL_INK } };
+    cell.alignment = { horizontal: right ? "right" : "center", vertical: "middle", wrapText: !!wrap };
+    cell.border = xlBox("FFCFD6DC");
+  }
+
+  /* d = { layout, lots: Map, archive: Map(key -> entries), names: Map(id -> name), today: "YYYY-MM-DD", exportedAt: Date } */
+  function buildWorkbook(X, d) {
+    var L = d.layout, wb = new X.Workbook(), counts = summarize(d.lots, L), c, r;
+    wb.creator = "نظام الجودة";
+    wb.created = d.exportedAt;
+
+    /* sheet 1: the floor plan, one Excel cell per lot, archive as the cell note */
+    var ws = wb.addWorksheet("خريطة المخزن", {
+      views: [{ rightToLeft: true, showGridLines: false }],
+      properties: { tabColor: { argb: XL_BLUE } },
+      pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+    });
+    var lastCol = L.cols + 1, span = Math.max(lastCol, 6), row = 1;
+    ws.getColumn(1).width = 7;
+    for (c = 2; c <= span; c++) ws.getColumn(c).width = 13;
+
+    ws.mergeCells(1, 1, 1, span);
+    var t = ws.getCell(1, 1);
+    t.value = "خريطة اللوطات" + (L.name ? " · " + L.name : "");
+    t.font = { name: XL_FONT, size: 16, bold: true, color: { argb: XL_INK } };
+    t.alignment = { horizontal: "right", vertical: "middle" };
+    ws.getRow(1).height = 30;
+
+    ws.mergeCells(2, 1, 2, span);
+    var sub = ws.getCell(2, 1);
+    sub.value = "تاريخ التصدير: " + fmtDate(d.today) + " · عدد اللوطات: " + counts.total + " · المسجَّل منها: " + (counts.total - counts.empty);
+    sub.font = { name: XL_FONT, size: 11, color: { argb: XL_MUTED } };
+    sub.alignment = { horizontal: "right", vertical: "middle" };
+
+    ["live", "dead", "clean", "unchecked", "empty"].forEach(function (st, i) {
+      var lc = ws.getCell(3, 2 + i), pal = XL[st];
+      lc.value = LONG[st] + " (" + counts[st] + ")";
+      lc.fill = xlSolid(pal.fill);
+      lc.font = { name: XL_FONT, size: 10, bold: true, color: { argb: pal.font } };
+      lc.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      lc.border = xlBox(pal.line);
+    });
+    ws.getRow(3).height = 26;
+    row = 5;
+
+    L.parts.forEach(function (p, pi) {
+      if (pi > 0) {
+        ws.mergeCells(row, 1, row, lastCol);
+        var a = ws.getCell(row, 1);
+        a.value = "ممر";
+        a.fill = { type: "pattern", pattern: "lightUp", fgColor: { argb: "FFCFD6DC" }, bgColor: { argb: "FFF3F5F7" } };
+        a.font = { name: XL_FONT, size: 11, bold: true, color: { argb: XL_MUTED } };
+        a.alignment = { horizontal: "center", vertical: "middle" };
+        ws.getRow(row).height = 22;
+        row++;
+      }
+      ws.mergeCells(row, 1, row, lastCol);
+      var h = ws.getCell(row, 1);
+      h.value = partTitle(pi) + " · " + rowsText(p.rows) + " × " + L.cols + " لوط";
+      h.fill = xlSolid(XL_BLUE);
+      h.font = { name: XL_FONT, size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+      h.alignment = { horizontal: "right", vertical: "middle", indent: 1 };
+      ws.getRow(row).height = 24;
+      row++;
+      for (c = 1; c <= L.cols; c++) {
+        var cn = ws.getCell(row, c + 1);
+        cn.value = c;
+        cn.font = { name: XL_FONT, size: 10, bold: true, color: { argb: XL_MUTED } };
+        cn.alignment = { horizontal: "center", vertical: "middle" };
+      }
+      row++;
+      for (r = 1; r <= p.rows; r++) {
+        var rn = ws.getCell(row, 1);
+        rn.value = r;
+        rn.font = { name: XL_FONT, size: 10, bold: true, color: { argb: XL_MUTED } };
+        rn.alignment = { horizontal: "center", vertical: "middle" };
+        for (c = 1; c <= L.cols; c++) {
+          var key = lotKey(p.id, r, c), lot = d.lots.get(key), st = lotState(lot), pal = XL[st], cell = ws.getCell(row, c + 1), lines = [];
+          if (lot && lot.label) lines.push(lot.label);
+          if (lot && lot.produced) lines.push(fmtDate(lot.produced));
+          if (st !== "empty") lines.push(WORD[st]);
+          cell.value = lines.length ? lines.join("\n") : null;
+          cell.fill = xlSolid(pal.fill);
+          cell.font = { name: XL_FONT, size: 10, bold: st === "live" || st === "dead", color: { argb: pal.font } };
+          cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+          cell.border = xlBox(pal.line);
+          var note = archiveNote(d.archive.get(key), d.names, 12);
+          if (note) cell.note = note;
+        }
+        ws.getRow(row).height = 44;
+        row++;
+      }
+    });
+
+    /* sheet 2: one row per occupied lot, ready to filter and sort */
+    var ls = wb.addWorksheet("اللوطات", {
+      views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
+      properties: { tabColor: { argb: "FF1A5A2F" } }
+    });
+    var heads = [["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم اللوط", 18], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ آخر فحص", 15], ["عمر اللوط (يوم)", 15], ["ملاحظات", 40], ["سجلات الأرشيف", 15]];
+    heads.forEach(function (hd, i) { ls.getColumn(i + 1).width = hd[1]; xlHead(ls.getCell(1, i + 1), hd[0]); });
+    ls.getRow(1).height = 30;
+    var n = 1;
+    L.parts.forEach(function (p, pi) {
+      for (var rr = 1; rr <= p.rows; rr++) {
+        for (var cc = 1; cc <= L.cols; cc++) {
+          var k2 = lotKey(p.id, rr, cc), lot2 = d.lots.get(k2), st2 = lotState(lot2);
+          if (st2 === "empty") continue;
+          n++;
+          var arc = d.archive.get(k2);
+          var vals = [partTitle(pi), rr, cc, lot2.label || "", xlDate(lot2.produced), WORD[st2], xlDate(lot2.inspected), null, lot2.notes || "", arc ? arc.length : 0];
+          vals.forEach(function (v, i) {
+            var cl = ls.getCell(n, i + 1);
+            cl.value = v;
+            xlBody(cl, i === 8, i === 8);
+          });
+          ls.getCell(n, 5).numFmt = "dd/mm/yyyy";
+          ls.getCell(n, 7).numFmt = "dd/mm/yyyy";
+          var sc = ls.getCell(n, 6);
+          sc.fill = xlSolid(XL[st2].fill);
+          sc.font = { name: XL_FONT, size: 11, bold: true, color: { argb: XL[st2].font } };
+          if (lot2.produced) {
+            var age = daysBetween(lot2.produced, d.today), ac = ls.getCell(n, 8);
+            ac.value = { formula: 'IF(E' + n + '="","",TODAY()-E' + n + ")", result: age === null ? "" : age };
+            ac.numFmt = "0";
+          }
+        }
+      }
+    });
+    ls.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: heads.length } };
+
+    /* sheet 3: the archive of every cell, newest first */
+    var as = wb.addWorksheet("الأرشيف", {
+      views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
+      properties: { tabColor: { argb: "FF6F4300" } }
+    });
+    var aheads = [["التاريخ والوقت", 20], ["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم اللوط", 18], ["الحدث", 14], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ الفحص", 15], ["ملاحظات", 40], ["بواسطة", 22]];
+    aheads.forEach(function (hd, i) { as.getColumn(i + 1).width = hd[1]; xlHead(as.getCell(1, i + 1), hd[0]); });
+    as.getRow(1).height = 30;
+    var all = [];
+    d.archive.forEach(function (list, key) {
+      var kk = parseKey(key);
+      if (!kk) return;
+      (list || []).forEach(function (raw) { all.push({ k: kk, en: normalizeEntry(raw) }); });
+    });
+    all.sort(function (x, y) { return byAtDesc(x.en, y.en); });
+    var m = 1;
+    all.forEach(function (it) {
+      m++;
+      var en = it.en, pIdx = -1;
+      L.parts.forEach(function (p, i) { if (p.id === it.k.pid) pIdx = i; });
+      var who = en.by ? (d.names.get(en.by) || "مستخدم") : "";
+      var vals3 = [xlDateTime(en.at), pIdx >= 0 ? partTitle(pIdx) : "جزء محذوف", it.k.r, it.k.c, en.l, en.t === "clear" ? "تفريغ الخلية" : "حفظ", xlDate(en.p), en.s ? WORD[en.s] : (en.t === "save" ? WORD.unchecked : ""), xlDate(en.i), en.n, who];
+      vals3.forEach(function (v, i) {
+        var cl = as.getCell(m, i + 1);
+        cl.value = v === "" ? null : v;
+        xlBody(cl, i === 9, i === 9);
+      });
+      as.getCell(m, 1).numFmt = "dd/mm/yyyy hh:mm";
+      as.getCell(m, 7).numFmt = "dd/mm/yyyy";
+      as.getCell(m, 9).numFmt = "dd/mm/yyyy";
+      if (en.s) {
+        var sc3 = as.getCell(m, 8);
+        sc3.fill = xlSolid(XL[en.s].fill);
+        sc3.font = { name: XL_FONT, size: 11, bold: true, color: { argb: XL[en.s].font } };
+      }
+    });
+    as.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: aheads.length } };
+    return wb;
+  }
+  /* excel:end */
+
+  function svgIc(inner) { return '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true">' + inner + "</svg>"; }
+  var ICON = {
+    clean: svgIc('<circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.3l2.1 2.1 3.9-4.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'),
+    dead: svgIc('<circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'),
+    live: svgIc('<circle class="pulse" cx="8" cy="8" r="6.6" fill="currentColor" fill-opacity="0.28"/><circle cx="8" cy="8" r="3.3" fill="currentColor"/>'),
+    unchecked: svgIc('<circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.4 2.2"/>')
+  };
+  var TRASH = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>';
+  var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js";
+  var XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+  function $(id) { return document.getElementById(id); }
+  var elHeadline = $("headline"), elChips = $("chips"), elBoard = $("board"), elBanner = $("banner"), elSync = $("sync");
+  var elEyebrow = $("eyebrow"), elToast = $("toast"), btnSettings = $("btn-settings"), btnExport = $("btn-export");
+  var dlgLot = $("dlg-lot"), dlgSet = $("dlg-set"), btnClear = $("btn-clear"), btnSave = $("btn-save");
+  var viewBtns = Array.prototype.slice.call(document.querySelectorAll(".viewseg [data-view]"));
+
+  var VIEW_KEY = "warehouse-lots-view";
+  function initialView() {
+    try {
+      var v = localStorage.getItem(VIEW_KEY);
+      if (v === "compact" || v === "detail") return v;
+    } catch (e) { /* storage unavailable */ }
+    try { return window.matchMedia("(min-width: 1024px)").matches ? "detail" : "compact"; } catch (e) { return "compact"; }
+  }
+
+  var state = {
+    layout: normalizeLayout(null),
+    lots: new Map(),
+    filter: "all",
+    view: initialView(),
+    loading: true,
+    slow: false,
+    gotData: false,
+    fatal: "",
+    mode: "boot",
+    canWrite: null,
+    myId: "",
+    syncedAt: 0
+  };
+  var store = null, userCap = null, downloadsCap = null, editing = null, saving = false;
+  var toastTimer = 0, lastSig = "", archTok = 0, exporting = false, excelPromise = null;
+
+  function openDlg(d) { if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
+  function closeDlg(d) { if (d.close) d.close(); else d.removeAttribute("open"); }
+  function showErr(p, msg) { p.textContent = msg; p.hidden = false; }
+  function hideErr(p) { p.textContent = ""; p.hidden = true; }
+  function toast(msg) {
+    elToast.textContent = msg;
+    elToast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { elToast.hidden = true; }, 2600);
+  }
+  function arm(btn, armedText, normalText) {
+    btn.setAttribute("data-armed", "1");
+    btn.textContent = armedText;
+    clearTimeout(btn._t);
+    btn._t = setTimeout(function () { disarm(btn, normalText); }, 4000);
+  }
+  function disarm(btn, normalText) {
+    clearTimeout(btn._t);
+    btn.setAttribute("data-armed", "0");
+    btn.textContent = normalText;
+  }
+  function writeError(e) {
+    var code = e && e.code;
+    if (code === "invalid_argument") return "تعذّر الحفظ. قد لا تملك صلاحية التعديل على هذه الخريطة.";
+    if (code === "quota_exceeded") return "تم الوصول إلى الحد الأقصى للبيانات المسموح بها.";
+    if (code === "revoked") return "انتهت صلاحية الوصول إلى هذه الخريطة.";
+    return "تعذّر الحفظ. تحقق من الاتصال وحاول مرة أخرى.";
+  }
+  function resolveNames(ids) {
+    var out = new Map(), uniq = [];
+    ids.forEach(function (id) { if (id && uniq.indexOf(id) < 0) uniq.push(id); });
+    if (!uniq.length || !userCap || typeof userCap.profiles !== "function") return Promise.resolve(out);
+    return Promise.resolve(userCap.profiles(uniq)).then(function (ps) {
+      uniq.forEach(function (id) { out.set(id, ps && ps[id] && ps[id].name ? ps[id].name : ""); });
+      return out;
+    }, function () { return out; });
+  }
+
+  /* ---------- rendering ---------- */
+  function hasExamples() {
+    var any = false;
+    state.lots.forEach(function (l) { if (l.example) any = true; });
+    return any;
+  }
+  function bannerInfo() {
+    if (state.fatal) return { tone: "warn", text: state.fatal };
+    if (state.mode === "local") return { tone: "note", text: "ما تسجله محفوظ على هذا الجهاز فقط ولن يظهر على أجهزة أخرى. اربط المزامنة لمشاركته.", act: "open-sync", actLabel: "ربط المزامنة" };
+    if (state.slow) return { tone: "warn", text: "تعذّر الوصول إلى البيانات المشتركة حاليًا. قد تكون الحالة المعروضة غير محدّثة." };
+    if (state.canWrite === false) return { tone: "note", text: "عرض فقط. ليس لديك صلاحية تعديل هذه الخريطة." };
+    if (!state.loading && hasExamples()) return { tone: "note", text: "هذه بيانات تجريبية لتوضيح الشكل. امسحها ثم سجّل لوطات المخزن.", act: "clear-examples", actLabel: "مسح البيانات التجريبية" };
+    return null;
+  }
+  function renderBanner() {
+    var b = bannerInfo();
+    if (!b) { elBanner.hidden = true; elBanner.innerHTML = ""; return; }
+    elBanner.hidden = false;
+    elBanner.setAttribute("data-tone", b.tone);
+    elBanner.innerHTML = "<p>" + esc(b.text) + "</p>" + (b.act ? '<button type="button" class="btn small" data-act="' + b.act + '" data-armed="0">' + esc(b.actLabel) + "</button>" : "");
+  }
+  function cellHTML(p, pi, r, c) {
+    if (state.loading) return '<button type="button" class="cell s-empty skel" disabled tabindex="-1" aria-hidden="true"></button>';
+    var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l);
+    var dim = state.filter !== "all" && state.filter !== st;
+    var hasLabel = !!(l && l.label);
+    var aria = partTitle(pi) + "، الصف " + r + "، العمود " + c + (hasLabel ? "، " + l.label : "") + "، " + (l && l.produced ? "تاريخ الإنتاج " + fmtDate(l.produced) + "، " : "") + LONG[st];
+    var body = hasLabel ? '<span class="c-id">' + esc(l.label) + "</span>" : '<span class="c-id num">' + r + "-" + c + "</span>";
+    if (st !== "empty") {
+      body += l && l.produced
+        ? '<span class="c-date num">' + fmtDate(l.produced, true) + "</span>"
+        : '<span class="c-date nodate">بدون تاريخ</span>';
+    }
+    body += '<span class="c-state">' + (ICON[st] || "") + '<span class="c-word">' + WORD[st] + "</span></span>";
+    return '<button type="button" class="cell s-' + st + '" data-key="' + key + '"' + (dim ? ' data-dim="1"' : "") + ' aria-label="' + esc(aria) + '">' + body + "</button>";
+  }
+  function boardHTML() {
+    var L = state.layout, out = [];
+    L.parts.forEach(function (p, pi) {
+      if (pi > 0) out.push('<div class="aisle" role="separator" aria-label="ممر"><span>ممر</span></div>');
+      out.push('<section class="part"><div class="part-head"><h2>' + partTitle(pi) + '</h2><span class="part-meta">' + rowsText(p.rows) + " × " + L.cols + " · " + lotsText(p.rows * L.cols) + "</span></div>");
+      out.push('<div class="grid" style="--cols:' + L.cols + '"><span class="corner"></span>');
+      var c;
+      for (c = 1; c <= L.cols; c++) out.push('<span class="colno">' + c + "</span>");
+      for (var r = 1; r <= p.rows; r++) {
+        out.push('<span class="rowno">' + r + "</span>");
+        for (c = 1; c <= L.cols; c++) out.push(cellHTML(p, pi, r, c));
+      }
+      out.push("</div></section>");
+    });
+    return out.join("");
+  }
+  function render() {
+    var sig = JSON.stringify([state.layout, Array.from(state.lots.entries()), state.filter, state.view, state.loading, state.slow, state.fatal, state.mode, state.canWrite]);
+    if (sig === lastSig) return;
+    lastSig = sig;
+    var L = state.layout, c = summarize(state.lots, L);
+    elEyebrow.textContent = (L.name || "المخزن") + " · " + lotsText(c.total);
+
+    var h = state.loading ? { tone: "idle", text: "جارٍ تحميل اللوطات…" } : headline(c);
+    elHeadline.setAttribute("data-tone", h.tone);
+    elHeadline.innerHTML = (ICON[h.tone] || "") + "<span>" + esc(h.text) + "</span>";
+
+    if (state.loading) {
+      elChips.innerHTML = "";
+    } else {
+      if ((state.filter === "unchecked" || state.filter === "empty") && c[state.filter] === 0) state.filter = "all";
+      var defs = [["all", "الكل", c.total, ""], ["live", "نشاط حي", c.live, "live"], ["dead", "نشاط ميت", c.dead, "dead"], ["clean", "سليم", c.clean, "clean"]];
+      if (c.unchecked) defs.push(["unchecked", "لم يُفحص", c.unchecked, "unchecked"]);
+      if (c.empty) defs.push(["empty", "فاضي", c.empty, "empty"]);
+      elChips.innerHTML = defs.map(function (d) {
+        return '<button type="button" class="chip' + (d[3] ? " s-" + d[3] : "") + '" data-f="' + d[0] + '" aria-pressed="' + (state.filter === d[0]) + '">' +
+          (ICON[d[3]] || "") + "<span>" + d[1] + '</span><b class="num">' + d[2] + "</b></button>";
+      }).join("");
+    }
+
+    elBoard.setAttribute("data-view", state.view);
+    elBoard.innerHTML = boardHTML();
+    elBoard.setAttribute("aria-busy", state.loading ? "true" : "false");
+    viewBtns.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-view") === state.view)); });
+
+    renderBanner();
+    btnSettings.disabled = state.loading;
+    btnSettings.hidden = state.canWrite === false;
+    btnExport.disabled = state.loading || exporting;
+  }
+  function paintSync() {
+    elSync.textContent = state.mode === "db" && state.syncedAt
+      ? "تتزامن البيانات تلقائيًا بين كل الأجهزة. آخر تحديث " + fmtClock(state.syncedAt)
+      : "";
+  }
+  function setView(v) {
+    state.view = v;
+    try { localStorage.setItem(VIEW_KEY, v); } catch (e) { /* storage unavailable */ }
+    render();
+  }
+
+  /* ---------- storage ---------- */
+  function makeLocalStore() {
+    var KEY = "warehouse-lots-v2", data = { layout: null, lots: {}, archive: {} }, cb = null;
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && typeof p === "object") data = { layout: p.layout || null, lots: p.lots || {}, archive: p.archive || {} };
+      }
+    } catch (e) { /* storage unavailable: keep in memory */ }
+    function persist() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* ignore */ } }
+    function emit() {
+      var m = new Map();
+      Object.keys(data.lots).forEach(function (k) { m.set(k, data.lots[k]); });
+      cb.layout(data.layout);
+      cb.lots(m);
+    }
+    return {
+      start: function (c) { cb = c; emit(); c.ready(); },
+      saveLot: function (k, d) { data.lots[k] = d; persist(); emit(); return Promise.resolve(); },
+      deleteLot: function (k) { delete data.lots[k]; persist(); emit(); return Promise.resolve(); },
+      saveLayout: function (l) { data.layout = l; persist(); emit(); return Promise.resolve(); },
+      getArchive: function (k) { return Promise.resolve((data.archive[k] || []).slice()); },
+      appendArchive: function (k, e) { data.archive[k] = appendEntry(data.archive[k], e); persist(); return Promise.resolve(); },
+      getAllArchive: function () {
+        var m = new Map();
+        Object.keys(data.archive).forEach(function (k) { m.set(k, data.archive[k].slice()); });
+        return Promise.resolve(m);
+      }
+    };
+  }
+  function makeDbStore(db) {
+    var lotsCol = db.collection("lots"), archCol = db.collection("archive"), layoutDoc = db.doc("config/layout");
+    function entriesOf(snap) {
+      var d = snap && snap.exists ? snap.data() : null;
+      return d && Array.isArray(d.entries) ? d.entries : [];
+    }
+    return {
+      start: function (cb) {
+        var seen = { lots: false, layout: false }, timer = setTimeout(cb.slow, 10000);
+        function settle(which, snap) {
+          if (snap.metadata && snap.metadata.fromCache) return;
+          cb.synced();
+          seen[which] = true;
+          if (seen.lots && seen.layout) { clearTimeout(timer); cb.ready(); }
+        }
+        function fail(e) { clearTimeout(timer); cb.error(e); }
+        lotsCol.onSnapshot(function (snap) {
+          var m = new Map();
+          snap.docs.forEach(function (d) { m.set(d.id, d.data() || {}); });
+          cb.lots(m);
+          settle("lots", snap);
+        }, fail);
+        layoutDoc.onSnapshot(function (snap) {
+          cb.layout(snap.exists ? snap.data() : null);
+          settle("layout", snap);
+        }, fail);
+      },
+      saveLot: function (k, d) { return lotsCol.doc(k).set(d); },
+      deleteLot: function (k) { return lotsCol.doc(k).delete(); },
+      saveLayout: function (l) { return layoutDoc.set(l); },
+      getArchive: function (k) { return archCol.doc(k).get().then(entriesOf); },
+      appendArchive: function (k, entry) {
+        var ref = archCol.doc(k);
+        return ref.get().then(function (snap) { return ref.set({ entries: appendEntry(entriesOf(snap), entry) }); });
+      },
+      getAllArchive: function () {
+        return archCol.get().then(function (snap) {
+          var m = new Map();
+          snap.docs.forEach(function (d) { m.set(d.id, entriesOf(d)); });
+          return m;
+        });
+      }
+    };
+  }
+  var callbacks = {
+    lots: function (map) {
+      var m = new Map();
+      map.forEach(function (v, k) { m.set(k, normalizeLot(v)); });
+      state.lots = m; state.gotData = true; render();
+    },
+    layout: function (raw) { state.layout = normalizeLayout(raw); state.gotData = true; render(); },
+    ready: function () { state.loading = false; state.slow = false; render(); },
+    slow: function () { state.slow = true; if (state.gotData) state.loading = false; render(); },
+    synced: function () { state.syncedAt = Date.now(); state.slow = false; paintSync(); },
+    error: function () { state.loading = false; state.fatal = "تعذّر تحميل البيانات. أعد فتح الصفحة."; render(); }
+  };
+
+  /* ---------- lot sheet and its archive ---------- */
+  var SEG = [["clean", "سليم"], ["dead", "نشاط ميت"], ["live", "نشاط حي"], ["unchecked", "لم يُفحص"]];
+  $("seg").innerHTML = SEG.map(function (o) {
+    var v = o[0] === "unchecked" ? "" : o[0];
+    return '<label class="seg-opt s-' + o[0] + '"><input type="radio" id="st-' + o[0] + '" name="status" value="' + v + '"><span class="seg-face">' + ICON[o[0]] + "<span>" + o[1] + "</span></span></label>";
+  }).join("");
+
+  function checkedStatus() { var i = dlgLot.querySelector('input[name="status"]:checked'); return i ? i.value : ""; }
+  function setStatus(v) { var i = dlgLot.querySelector('input[name="status"][value="' + v + '"]'); if (i) i.checked = true; }
+  function paintAge() {
+    var v = $("f-produced").value;
+    $("f-age").textContent = v ? ageText(daysBetween(v, todayISO())) : "";
+  }
+  function setSaving(on) {
+    saving = on;
+    btnSave.disabled = on;
+    btnClear.disabled = on;
+    btnSave.textContent = on ? "جارٍ الحفظ…" : "حفظ";
+  }
+  function entryHTML(en, names) {
+    var st = en.s || "unchecked";
+    var pill = '<span class="pill s-' + st + '">' + ICON[st] + "<span>" + LONG[st] + "</span></span>";
+    var bits = [];
+    if (en.l) bits.push("<span>اللوط: " + esc(en.l) + "</span>");
+    if (en.p) bits.push('<span>إنتاج <span class="num">' + fmtDate(en.p) + "</span></span>");
+    if (en.i) bits.push('<span>فحص <span class="num">' + fmtDate(en.i) + "</span></span>");
+    var who = en.by ? (names.get(en.by) || "مستخدم") : "";
+    var clear = en.t === "clear";
+    return '<li class="log-item"><div class="log-top"><span class="num">' + fmtDateTime(en.at) + '</span><span class="tag' + (clear ? " clear" : "") + '">' + (clear ? "تفريغ الخلية" : "حفظ") + "</span></div>" +
+      '<div class="log-main">' + (clear ? '<span class="log-lead">كان فيها:</span>' : "") + pill + bits.join("") + "</div>" +
+      (en.n ? '<p class="log-note">' + esc(en.n) + "</p>" : "") +
+      (who ? '<p class="log-by">بواسطة: ' + esc(who) + "</p>" : "") + "</li>";
+  }
+  function loadArchive(key, showAll) {
+    var tok = ++archTok;
+    $("arch-body").innerHTML = '<p class="arch-empty">جارٍ تحميل الأرشيف…</p>';
+    $("arch-count").textContent = "";
+    store.getArchive(key).then(function (list) {
+      var rows = list.map(normalizeEntry).sort(byAtDesc);
+      var shown = showAll ? rows : rows.slice(0, 30);
+      return resolveNames(shown.map(function (e) { return e.by; })).then(function (names) {
+        if (tok !== archTok) return;
+        $("arch-count").textContent = rows.length ? entriesText(rows.length) : "";
+        if (!rows.length) {
+          $("arch-body").innerHTML = '<p class="arch-empty">لا توجد سجلات بعد. كل حفظ أو تفريغ لهذه الخلية يُسجَّل هنا بتاريخه ووقته.</p>';
+          return;
+        }
+        var html = '<ol class="log">' + shown.map(function (en) { return entryHTML(en, names); }).join("") + "</ol>";
+        if (rows.length > shown.length) html += '<button type="button" class="btn small" data-arch-all="1">عرض كل السجلات (' + rows.length + ")</button>";
+        $("arch-body").innerHTML = html;
+      });
+    }).catch(function () {
+      if (tok !== archTok) return;
+      $("arch-body").innerHTML = '<p class="arch-empty">تعذّر تحميل الأرشيف. أغلق الشاشة وافتحها مرة أخرى.</p>';
+    });
+  }
+  function openLot(key) {
+    var k = parseKey(key), pi = -1;
+    if (!k) return;
+    state.layout.parts.forEach(function (p, i) { if (p.id === k.pid) pi = i; });
+    if (pi < 0) return;
+    var l = state.lots.get(key) || null, today = todayISO();
+    var exists = !!l && lotState(l) !== "empty", ro = state.canWrite === false;
+    var pos = "الصف " + k.r + " · العمود " + k.c;
+    editing = { key: key, savedStatus: l ? l.status : "", touched: false, pending: null };
+    $("lot-title").textContent = l && l.label ? l.label : pos;
+    $("lot-sub").textContent = partTitle(pi) + (l && l.label ? " · " + pos : "");
+    $("f-produced").max = today;
+    $("f-inspected").max = today;
+    $("f-produced").value = l ? l.produced : "";
+    $("f-inspected").value = l ? l.inspected : "";
+    $("f-label").value = l ? l.label : "";
+    $("f-notes").value = l ? l.notes : "";
+    setStatus(l ? l.status : "");
+    paintAge();
+    hideErr($("lot-err"));
+    $("lot-fields").disabled = ro;
+    btnSave.hidden = ro;
+    btnClear.hidden = ro || !exists;
+    disarm(btnClear, "تفريغ الخلية");
+    setSaving(false);
+    openDlg(dlgLot);
+    $("lot-title").focus();
+    loadArchive(key, false);
+  }
+  $("f-produced").addEventListener("input", paintAge);
+  $("f-inspected").addEventListener("input", function () { if (editing) editing.touched = true; });
+  $("seg").addEventListener("change", function () {
+    var st = checkedStatus();
+    if (editing && st && st !== editing.savedStatus && !editing.touched) $("f-inspected").value = todayISO();
+  });
+  $("arch-body").addEventListener("click", function (e) {
+    if (e.target.closest("[data-arch-all]") && editing) loadArchive(editing.key, true);
+  });
+  $("lot-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!editing || saving) return;
+    var key = editing.key;
+    if (editing.pending) {
+      var pend = editing.pending;
+      hideErr($("lot-err"));
+      setSaving(true);
+      store.appendArchive(pend.key, pend.entry).then(
+        function () { closeDlg(dlgLot); toast("تم الحفظ"); },
+        function () { showErr($("lot-err"), "تعذّر تسجيل الأرشيف. تحقق من الاتصال واضغط حفظ لإعادة المحاولة."); }
+      ).then(function () { setSaving(false); });
+      return;
+    }
+    var d = {
+      label: $("f-label").value.trim(),
+      produced: $("f-produced").value,
+      status: checkedStatus(),
+      inspected: $("f-inspected").value,
+      notes: $("f-notes").value.trim()
+    };
+    var err = validateLot(d);
+    if (err) { showErr($("lot-err"), err); return; }
+    if (d.status && !d.inspected) d.inspected = todayISO();
+    var doc = {};
+    ["label", "produced", "status", "inspected", "notes"].forEach(function (f) { if (d[f]) doc[f] = d[f]; });
+    var nd = normalizeLot(doc), prev = state.lots.get(key) || null;
+    if (prev && sameLot(prev, nd)) { closeDlg(dlgLot); toast("لا توجد تغييرات"); return; }
+    var entry = makeEntry("save", nd, state.myId);
+    hideErr($("lot-err"));
+    setSaving(true);
+    store.saveLot(key, doc).then(function () {
+      return store.appendArchive(key, entry).then(
+        function () { closeDlg(dlgLot); toast("تم الحفظ"); },
+        function () {
+          if (editing) editing.pending = { key: key, entry: entry };
+          $("lot-fields").disabled = true;
+          btnClear.hidden = true;
+          showErr($("lot-err"), "تم حفظ اللوط، لكن تعذّر تسجيله في الأرشيف. تحقق من الاتصال واضغط حفظ لإعادة المحاولة.");
+        }
+      );
+    }, function (ex) { showErr($("lot-err"), writeError(ex)); }).then(function () { setSaving(false); });
+  });
+  btnClear.addEventListener("click", function () {
+    if (!editing || saving) return;
+    if (btnClear.getAttribute("data-armed") !== "1") { arm(btnClear, "اضغط مرة أخرى للتأكيد", "تفريغ الخلية"); return; }
+    clearTimeout(btnClear._t);
+    var key = editing.key, prev = state.lots.get(key) || null;
+    hideErr($("lot-err"));
+    setSaving(true);
+    store.appendArchive(key, makeEntry("clear", prev, state.myId)).then(function () { return store.deleteLot(key); }).then(
+      function () { closeDlg(dlgLot); toast("تم تفريغ الخلية"); },
+      function (ex) { showErr($("lot-err"), writeError(ex)); }
+    ).then(function () { setSaving(false); disarm(btnClear, "تفريغ الخلية"); });
+  });
+
+  /* ---------- layout sheet ---------- */
+  var draft = { cols: 14, parts: [] }, savingSet = false;
+  function partRowHTML(p, i) {
+    var title = partTitle(i);
+    return '<div class="part-row"><div class="stepper">' +
+      '<span class="lbl" id="lbl-p' + p.id + '">' + title + "</span>" +
+      '<div class="step-ctl" role="group" aria-labelledby="lbl-p' + p.id + '">' +
+      '<button type="button" data-step="rows" data-pid="' + p.id + '" data-d="-1" aria-label="تقليل صفوف ' + title + '">−</button>' +
+      '<output class="num" data-rows-of="' + p.id + '">' + p.rows + "</output>" +
+      '<button type="button" data-step="rows" data-pid="' + p.id + '" data-d="1" aria-label="زيادة صفوف ' + title + '">+</button>' +
+      "</div></div>" +
+      (draft.parts.length > 1 ? '<button type="button" class="icon-btn small" data-rm="' + p.id + '" aria-label="حذف ' + title + '">' + TRASH + "</button>" : "") +
+      "</div>";
+  }
+  function buildParts() { $("s-parts").innerHTML = draft.parts.map(partRowHTML).join(""); }
+  function paintDraft() {
+    $("s-cols").textContent = draft.cols;
+    draft.parts.forEach(function (p) {
+      var o = dlgSet.querySelector('[data-rows-of="' + p.id + '"]');
+      if (o) o.textContent = p.rows;
+    });
+    var total = totalLots({ cols: draft.cols, parts: draft.parts });
+    $("s-total").textContent = "الإجمالي: " + lotsText(total) + (draft.parts.length > 1 ? " (" + draft.parts.map(function (p) { return p.rows * draft.cols; }).join(" + ") + ")" : "");
+    dlgSet.querySelectorAll("[data-step]").forEach(function (b) {
+      var d = +b.getAttribute("data-d"), cur;
+      if (b.getAttribute("data-step") === "cols") cur = draft.cols;
+      else {
+        var pid = +b.getAttribute("data-pid");
+        draft.parts.forEach(function (p) { if (p.id === pid) cur = p.rows; });
+      }
+      var lim = b.getAttribute("data-step") === "cols" ? LIMITS.cols : LIMITS.rows;
+      b.disabled = cur === undefined || (d < 0 && cur <= 1) || (d > 0 && cur >= lim);
+    });
+    $("btn-add-part").hidden = draft.parts.length >= LIMITS.parts;
+  }
+  function openSettings() {
+    draft = { cols: state.layout.cols, parts: state.layout.parts.map(function (p) { return { id: p.id, rows: p.rows }; }) };
+    $("s-name").value = state.layout.name;
+    hideErr($("set-err"));
+    buildParts();
+    paintDraft();
+    openDlg(dlgSet);
+    $("set-title").focus();
+  }
+  dlgSet.addEventListener("click", function (e) {
+    var st = e.target.closest("[data-step]");
+    if (st) {
+      var d = +st.getAttribute("data-d");
+      if (st.getAttribute("data-step") === "cols") draft.cols = clampInt(draft.cols + d, 1, LIMITS.cols, draft.cols);
+      else {
+        var pid = +st.getAttribute("data-pid");
+        draft.parts.forEach(function (p) { if (p.id === pid) p.rows = clampInt(p.rows + d, 1, LIMITS.rows, p.rows); });
+      }
+      hideErr($("set-err"));
+      paintDraft();
+      return;
+    }
+    var rm = e.target.closest("[data-rm]");
+    if (rm) {
+      var rid = +rm.getAttribute("data-rm");
+      if (draft.parts.length > 1) draft.parts = draft.parts.filter(function (p) { return p.id !== rid; });
+      hideErr($("set-err"));
+      buildParts();
+      paintDraft();
+      $("btn-add-part").focus();
+      return;
+    }
+    if (e.target.closest("#btn-add-part") && draft.parts.length < LIMITS.parts) {
+      var nid = draft.parts.reduce(function (m, p) { return Math.max(m, p.id); }, 0) + 1;
+      draft.parts.push({ id: nid, rows: 4 });
+      hideErr($("set-err"));
+      buildParts();
+      paintDraft();
+      var nb = dlgSet.querySelector('[data-step="rows"][data-pid="' + nid + '"][data-d="1"]');
+      if (nb) nb.focus();
+    }
+  });
+  $("set-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (savingSet) return;
+    var layout = { cols: draft.cols, parts: draft.parts.map(function (p) { return { id: p.id, rows: p.rows }; }), name: $("s-name").value.trim() };
+    if (totalLots(layout) > LIMITS.lots) {
+      showErr($("set-err"), "الحد الأقصى " + lotsText(LIMITS.lots) + " في المخزن الواحد. قلّل عدد الصفوف أو عدد اللوطات في الصف.");
+      return;
+    }
+    var out = outsideKeys(state.lots, state.layout, layout);
+    if (out.length) {
+      showErr($("set-err"), "لا يمكن تصغير الخريطة لأن هناك تسجيلات في " + lotsText(out.length) + " خارج الحجم الجديد. فرّغها أولًا أو اختر حجمًا أكبر.");
+      return;
+    }
+    savingSet = true;
+    $("btn-set-save").disabled = true;
+    store.saveLayout(layout).then(
+      function () { closeDlg(dlgSet); toast("تم حفظ التقسيمة"); },
+      function (ex) { showErr($("set-err"), writeError(ex)); }
+    ).then(function () { savingSet = false; $("btn-set-save").disabled = false; });
+  });
+
+  /* ---------- excel export ---------- */
+  function loadExcelJS() {
+    if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    if (excelPromise) return excelPromise;
+    excelPromise = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = XLSX_URL;
+      s.onload = function () { if (window.ExcelJS) resolve(window.ExcelJS); else { excelPromise = null; reject(new Error("exceljs_load")); } };
+      s.onerror = function () { excelPromise = null; reject(new Error("exceljs_load")); };
+      document.head.appendChild(s);
+    });
+    return excelPromise;
+  }
+  function setExportBusy(on) {
+    exporting = on;
+    btnExport.disabled = on || state.loading;
+    $("export-label").textContent = on ? "جارٍ التجهيز…" : "تصدير إكسل";
+  }
+  function exportExcel() {
+    if (exporting || !downloadsCap || state.loading || !store) return;
+    setExportBusy(true);
+    var X = null;
+    loadExcelJS().then(function (x) {
+      X = x;
+      return store.getAllArchive();
+    }).then(function (archive) {
+      var ids = [];
+      archive.forEach(function (list) { (list || []).forEach(function (en) { if (en && en.by) ids.push(en.by); }); });
+      return resolveNames(ids).then(function (names) {
+        var wb = buildWorkbook(X, { layout: state.layout, lots: state.lots, archive: archive, names: names, today: todayISO(), exportedAt: new Date() });
+        return wb.xlsx.writeBuffer();
+      });
+    }).then(function (buf) {
+      var blob = new Blob([buf], { type: XLSX_MIME });
+      return downloadsCap.save({ filename: "warehouse-lots-" + todayISO() + ".xlsx", data: blob });
+    }).then(function () {
+      toast("تم حفظ ملف الإكسل");
+    }, function (ex) {
+      var code = ex && ex.code;
+      if (code === "declined") return;
+      if (ex && ex.message === "exceljs_load") toast("تعذّر تحميل مكتبة الإكسل. تحقق من الاتصال وحاول مرة أخرى.");
+      else if (code === "rate_limited") toast("انتظر لحظات ثم حاول مرة أخرى.");
+      else toast("تعذّر تجهيز الملف. حاول مرة أخرى.");
+    }).then(function () { setExportBusy(false); });
+  }
+
+  /* ---------- events ---------- */
+  [dlgLot, dlgSet].forEach(function (dg) {
+    dg.addEventListener("click", function (e) {
+      if (e.target === dg || e.target.closest("[data-close]")) closeDlg(dg);
+    });
+  });
+  dlgLot.addEventListener("close", function () {
+    var k = editing && editing.key;
+    editing = null;
+    archTok++;
+    if (k) {
+      var b = elBoard.querySelector('[data-key="' + k + '"]');
+      if (b) b.focus();
+    }
+  });
+  elBoard.addEventListener("click", function (e) {
+    var b = e.target.closest(".cell");
+    if (b && !b.disabled && b.getAttribute("data-key")) openLot(b.getAttribute("data-key"));
+  });
+  var MOVES = { ArrowLeft: [0, 1], ArrowRight: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] };
+  elBoard.addEventListener("keydown", function (e) {
+    var b = e.target.closest ? e.target.closest(".cell") : null;
+    if (!b || !b.getAttribute("data-key") || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (!Object.prototype.hasOwnProperty.call(MOVES, e.key)) return;
+    var k = parseKey(b.getAttribute("data-key")), L = state.layout, pi = -1;
+    if (!k) return;
+    L.parts.forEach(function (p, i) { if (p.id === k.pid) pi = i; });
+    if (pi < 0) return;
+    e.preventDefault();
+    var mv = MOVES[e.key], r = k.r + mv[0], c = k.c + mv[1];
+    if (c < 1 || c > L.cols) return;
+    if (r < 1) { if (pi === 0) return; pi--; r = L.parts[pi].rows; }
+    else if (r > L.parts[pi].rows) { if (pi === L.parts.length - 1) return; pi++; r = 1; }
+    var nb = elBoard.querySelector('[data-key="' + lotKey(L.parts[pi].id, r, c) + '"]');
+    if (nb) nb.focus();
+  });
+  elChips.addEventListener("click", function (e) {
+    var b = e.target.closest(".chip");
+    if (!b) return;
+    var f = b.getAttribute("data-f");
+    state.filter = state.filter === f && f !== "all" ? "all" : f;
+    render();
+    var again = elChips.querySelector('[data-f="' + f + '"]');
+    if (again) again.focus();
+  });
+  document.querySelector(".viewseg").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-view]");
+    if (b) setView(b.getAttribute("data-view"));
+  });
+  btnSettings.addEventListener("click", openSettings);
+  btnExport.addEventListener("click", exportExcel);
+  elBanner.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-act]");
+    if (b && b.getAttribute("data-act") === "open-sync" && window.__standalone) { window.__standalone.openSync(); return; }
+    if (!b || b.getAttribute("data-act") !== "clear-examples" || !store) return;
+    if (b.getAttribute("data-armed") !== "1") { arm(b, "تأكيد المسح", "مسح البيانات التجريبية"); return; }
+    clearTimeout(b._t);
+    b.disabled = true;
+    var keys = [];
+    state.lots.forEach(function (l, k) { if (l.example) keys.push(k); });
+    var i = 0, active = 0, failed = false;
+    new Promise(function (resolve, reject) {
+      function pump() {
+        if (failed) return;
+        if (i >= keys.length && active === 0) { resolve(); return; }
+        while (active < 6 && i < keys.length) {
+          active++;
+          store.deleteLot(keys[i++]).then(function () { active--; pump(); }, function (ex) { failed = true; reject(ex); });
+        }
+      }
+      pump();
+    }).then(
+      function () { toast("تم مسح البيانات التجريبية"); },
+      function (ex) { toast(writeError(ex)); }
+    ).then(function () { b.disabled = false; });
+  });
+
+  /* ---------- start ---------- */
+  async function boot() {
+    render();
+    var S = window.__standalone;
+    try { await S.ready; } catch (e) { /* never rejects */ }
+    state.myId = S.person || "";
+    userCap = { profiles: function (ids) { var o = {}; ids.forEach(function (id) { o[id] = { name: id }; }); return Promise.resolve(o); } };
+    downloadsCap = { save: S.save };
+    btnExport.hidden = false;
+    if (S.mode === "cloud") { state.mode = "db"; store = S.cloudStore(); }
+    else { state.mode = "local"; store = makeLocalStore(); }
+    S.bind({ snapshot: function () { return { layout: state.layout, lots: state.lots }; }, store: store });
+    store.start(callbacks);
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
