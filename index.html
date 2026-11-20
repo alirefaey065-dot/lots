@@ -279,6 +279,16 @@ textarea { min-height: 84px; resize: vertical; }
 .btn:disabled { opacity: .55; cursor: default; }
 
 /* archive of one cell */
+.fum { padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--live-line); background: var(--live-bg); color: var(--live-fg); font-size: 14px; font-weight: 600; line-height: 1.6; }
+.fum[hidden] { display: none; }
+.fum[data-tone="re"] { border-width: 2.5px; }
+.c-fum { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; line-height: 1.25; color: var(--live-fg); }
+.cell[data-fum="fum"] { border-style: dashed; }
+.cell[data-fum="re"] { outline: 2.5px solid var(--live-fg); outline-offset: 1px; }
+.cell[data-fum="re"] .c-fum { padding: 0 5px; border-radius: 6px; background: var(--live-fg); color: var(--live-bg); }
+.board[data-view="compact"] .c-fum { display: none; }
+.arch-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.arch-actions[hidden] { display: none; }
 .archive { display: grid; gap: 10px; padding-top: 16px; border-top: 1.5px solid var(--line); }
 .arch-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .arch-head h3 { margin: 0; font-size: 16px; font-weight: 700; }
@@ -436,6 +446,7 @@ details.steps ol > li { min-width: 0; }
           <textarea id="f-notes" rows="2" maxlength="300"></textarea>
         </div>
       </fieldset>
+      <div class="fum" id="fum-box" data-tone="fum" hidden></div>
       <p class="err" id="lot-err" role="alert" hidden></p>
       <div class="actions two">
         <button type="submit" class="btn primary" id="btn-save">حفظ</button>
@@ -444,6 +455,10 @@ details.steps ol > li { min-width: 0; }
       <section class="archive" aria-labelledby="arch-h">
         <div class="arch-head"><h3 id="arch-h">أرشيف الخلية</h3><span class="arch-count" id="arch-count"></span></div>
         <div id="arch-body" aria-live="polite"></div>
+        <div class="arch-actions" id="arch-actions" hidden>
+          <button type="button" class="btn small" id="btn-arch-xl">تصدير الأرشيف (إكسل)</button>
+          <button type="button" class="btn small danger" id="btn-arch-clear" data-armed="0">تفريغ الأرشيف</button>
+        </div>
       </section>
     </form>
   </dialog>
@@ -942,6 +957,17 @@ details.steps ol > li { min-width: 0; }
           return settleWrite(x.F.setDoc(ref(x, "entries", k + "_" + e.id), data));
         });
       },
+      clearArchive: function (k) {
+        return getDb().then(function (x) {
+          return getDocsSmart(x, x.F.query(col(x, "entries"), x.F.where("lot", "==", k))).then(function (sn) {
+            var docs = sn.docs, seq = Promise.resolve();
+            for (var i = 0; i < docs.length; i += 100) (function (part) {
+              seq = seq.then(function () { return Promise.all(part.map(function (d) { return settleWrite(x.F.deleteDoc(d.ref)); })); });
+            })(docs.slice(i, i + 100));
+            return seq;
+          });
+        });
+      },
       getAllArchive: function () {
         return getDb().then(function (x) {
           return getDocsSmart(x, col(x, "entries")).then(function (s) {
@@ -1317,10 +1343,14 @@ details.steps ol > li { min-width: 0; }
     return l.produced || l.label || l.notes ? "unchecked" : "empty";
   }
   function summarize(lots, layout) {
-    var out = { live: 0, dead: 0, clean: 0, unchecked: 0, empty: 0, total: totalLots(layout) };
+    var out = { live: 0, dead: 0, clean: 0, unchecked: 0, empty: 0, fum: 0, recheck: 0, total: totalLots(layout) }, td = todayISO();
     layout.parts.forEach(function (p) {
       for (var r = 1; r <= p.rows; r++) {
-        for (var c = 1; c <= layout.cols; c++) out[lotState(lots.get(lotKey(p.id, r, c)))]++;
+        for (var c = 1; c <= layout.cols; c++) {
+          var lt = lots.get(lotKey(p.id, r, c)), s0 = lotState(lt);
+          out[s0]++;
+          if (s0 === "live") { var f0 = fumInfo(lt, td); if (f0) out[f0.re ? "recheck" : "fum"]++; }
+        }
       }
     });
     return out;
@@ -1341,7 +1371,12 @@ details.steps ol > li { min-width: 0; }
   }
   function headline(c) {
     if (c.total - c.empty === 0) return { tone: "idle", text: "لم يُسجَّل أي لوط بعد. اضغط على أي خلية للبدء." };
-    if (c.live > 0) return { tone: "live", text: "نشاط حشري حي في " + lotsText(c.live) };
+    if (c.live > 0) {
+      var fp = [];
+      if (c.recheck) fp.push("مطلوب إعادة فحص " + c.recheck);
+      if (c.fum) fp.push("تحت التبخير " + c.fum);
+      return { tone: "live", text: "نشاط حشري حي في " + lotsText(c.live) + (fp.length ? " (" + fp.join("، ") + ")" : "") };
+    }
     if (c.dead > 0) return { tone: "dead", text: "لا يوجد نشاط حي. حشرات ميتة في " + lotsText(c.dead) };
     if (c.clean > 0) return { tone: "clean", text: "لا يوجد نشاط حشري. اللوطات المفحوصة كلها سليمة." };
     return { tone: "idle", text: "لم يُفحص أي لوط بعد." };
@@ -1411,6 +1446,26 @@ details.steps ol > li { min-width: 0; }
     });
     if (rows.length > limit) out.push("… و" + entriesText(rows.length - limit) + " أقدم في ورقة «الأرشيف».");
     return out.join("\n");
+  }
+  var FUM_DAYS = 5;
+  function addDaysISO(iso, n) {
+    var t = parseISO(iso);
+    if (t === null) return "";
+    var d = new Date(t + n * 86400000);
+    return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate());
+  }
+  /* a live lot is under fumigation for FUM_DAYS from its inspection date, then it must be re-checked */
+  function fumInfo(lot, today) {
+    if (!lot || lot.status !== "live" || !lot.inspected) return null;
+    var d = daysBetween(lot.inspected, today);
+    if (d === null) return null;
+    if (d < 0) d = 0;
+    var until = addDaysISO(lot.inspected, FUM_DAYS);
+    return d < FUM_DAYS ? { re: false, left: FUM_DAYS - d, late: 0, until: until } : { re: true, left: 0, late: d - FUM_DAYS, until: until };
+  }
+  function fumText(fu) {
+    if (fu.re) return "انتهت مدة التبخير (" + fmtDate(fu.until) + "). " + (fu.late > 0 ? "متأخر " + daysText(fu.late) + ". " : "") + "أعد فحص اللوط وسجّل حالته الفعلية.";
+    return "تحت التبخير، باقي " + daysText(fu.left) + " (ينتهي " + fmtDate(fu.until) + ").";
   }
   /* helpers:end */
 
@@ -1661,11 +1716,11 @@ details.steps ol > li { min-width: 0; }
   function closeDlg(d) { if (d.close) d.close(); else d.removeAttribute("open"); }
   function showErr(p, msg) { p.textContent = msg; p.hidden = false; }
   function hideErr(p) { p.textContent = ""; p.hidden = true; }
-  function toast(msg) {
+  function toast(msg, ms) {
     elToast.textContent = msg;
     elToast.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { elToast.hidden = true; }, 2600);
+    toastTimer = setTimeout(function () { elToast.hidden = true; }, ms || 2600);
   }
   function arm(btn, armedText, normalText) {
     btn.setAttribute("data-armed", "1");
@@ -1718,10 +1773,10 @@ details.steps ol > li { min-width: 0; }
   }
   function cellHTML(p, pi, r, c) {
     if (state.loading) return '<button type="button" class="cell s-empty skel" disabled tabindex="-1" aria-hidden="true"></button>';
-    var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l);
-    var dim = state.filter !== "all" && state.filter !== st;
+    var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l), fu = st === "live" ? fumInfo(l, todayISO()) : null;
+    var dim = state.filter !== "all" && state.filter !== st && !(state.filter === "recheck" && fu && fu.re);
     var hasLabel = !!(l && l.label);
-    var aria = partTitle(pi) + "، الصف " + r + "، العمود " + c + (hasLabel ? "، " + l.label : "") + "، " + (l && l.produced ? "تاريخ الإنتاج " + fmtDate(l.produced) + "، " : "") + LONG[st];
+    var aria = partTitle(pi) + "، الصف " + r + "، العمود " + c + (hasLabel ? "، " + l.label : "") + "، " + (l && l.produced ? "تاريخ الإنتاج " + fmtDate(l.produced) + "، " : "") + LONG[st] + (fu ? "، " + fumText(fu) : "");
     var body = hasLabel ? '<span class="c-id">' + esc(l.label) + "</span>" : '<span class="c-id num">' + r + "-" + c + "</span>";
     if (st !== "empty") {
       body += l && l.produced
@@ -1729,7 +1784,8 @@ details.steps ol > li { min-width: 0; }
         : '<span class="c-date nodate">بدون تاريخ</span>';
     }
     body += '<span class="c-state">' + (ICON[st] || "") + '<span class="c-word">' + WORD[st] + "</span></span>";
-    return '<button type="button" class="cell s-' + st + '" data-key="' + key + '"' + (dim ? ' data-dim="1"' : "") + ' aria-label="' + esc(aria) + '">' + body + "</button>";
+    if (fu) body += '<span class="c-fum">' + (fu.re ? "أعد الفحص" : "تبخير: " + daysText(fu.left)) + "</span>";
+    return '<button type="button" class="cell s-' + st + '" data-key="' + key + '"' + (dim ? ' data-dim="1"' : "") + (fu ? ' data-fum="' + (fu.re ? "re" : "fum") + '"' : "") + ' aria-label="' + esc(aria) + '">' + body + "</button>";
   }
   function boardHTML() {
     var L = state.layout, out = [];
@@ -1748,7 +1804,7 @@ details.steps ol > li { min-width: 0; }
     return out.join("");
   }
   function render() {
-    var sig = JSON.stringify([state.layout, Array.from(state.lots.entries()), state.filter, state.view, state.loading, state.slow, state.fatal, state.mode, state.canWrite]);
+    var sig = JSON.stringify([state.layout, Array.from(state.lots.entries()), state.filter, state.view, state.loading, state.slow, state.fatal, state.mode, state.canWrite, todayISO()]);
     if (sig === lastSig) return;
     lastSig = sig;
     var L = state.layout, c = summarize(state.lots, L);
@@ -1761,8 +1817,9 @@ details.steps ol > li { min-width: 0; }
     if (state.loading) {
       elChips.innerHTML = "";
     } else {
-      if ((state.filter === "unchecked" || state.filter === "empty") && c[state.filter] === 0) state.filter = "all";
+      if ((state.filter === "unchecked" || state.filter === "empty" || state.filter === "recheck") && c[state.filter] === 0) state.filter = "all";
       var defs = [["all", "الكل", c.total, ""], ["live", "نشاط حي", c.live, "live"], ["dead", "نشاط ميت", c.dead, "dead"], ["clean", "سليم", c.clean, "clean"]];
+      if (c.recheck) defs.splice(2, 0, ["recheck", "مطلوب إعادة فحص", c.recheck, "live"]);
       if (c.unchecked) defs.push(["unchecked", "لم يُفحص", c.unchecked, "unchecked"]);
       if (c.empty) defs.push(["empty", "فاضي", c.empty, "empty"]);
       elChips.innerHTML = defs.map(function (d) {
@@ -1816,6 +1873,7 @@ details.steps ol > li { min-width: 0; }
       saveLayout: function (l) { data.layout = l; persist(); emit(); return Promise.resolve(); },
       getArchive: function (k) { return Promise.resolve((data.archive[k] || []).slice()); },
       appendArchive: function (k, e) { data.archive[k] = appendEntry(data.archive[k], e); persist(); return Promise.resolve(); },
+      clearArchive: function (k) { delete data.archive[k]; persist(); return Promise.resolve(); },
       getAllArchive: function () {
         var m = new Map();
         Object.keys(data.archive).forEach(function (k) { m.set(k, data.archive[k].slice()); });
@@ -1854,6 +1912,7 @@ details.steps ol > li { min-width: 0; }
       deleteLot: function (k) { return lotsCol.doc(k).delete(); },
       saveLayout: function (l) { return layoutDoc.set(l); },
       getArchive: function (k) { return archCol.doc(k).get().then(entriesOf); },
+      clearArchive: function (k) { return archCol.doc(k).delete(); },
       appendArchive: function (k, entry) {
         var ref = archCol.doc(k);
         return ref.get().then(function (snap) { return ref.set({ entries: appendEntry(entriesOf(snap), entry) }); });
@@ -1917,12 +1976,15 @@ details.steps ol > li { min-width: 0; }
     var tok = ++archTok;
     $("arch-body").innerHTML = '<p class="arch-empty">جارٍ تحميل الأرشيف…</p>';
     $("arch-count").textContent = "";
+    $("arch-actions").hidden = true;
     store.getArchive(key).then(function (list) {
       var rows = list.map(normalizeEntry).sort(byAtDesc);
       var shown = showAll ? rows : rows.slice(0, 30);
       return resolveNames(shown.map(function (e) { return e.by; })).then(function (names) {
         if (tok !== archTok) return;
         $("arch-count").textContent = rows.length ? entriesText(rows.length) : "";
+        $("arch-actions").hidden = !rows.length;
+        $("btn-arch-clear").hidden = state.canWrite === false;
         if (!rows.length) {
           $("arch-body").innerHTML = '<p class="arch-empty">لا توجد سجلات بعد. كل حفظ أو تفريغ لهذه الخلية يُسجَّل هنا بتاريخه ووقته.</p>';
           return;
@@ -1955,6 +2017,7 @@ details.steps ol > li { min-width: 0; }
     $("f-notes").value = l ? l.notes : "";
     setStatus(l ? l.status : "");
     paintAge();
+    paintFum();
     hideErr($("lot-err"));
     $("lot-fields").disabled = ro;
     btnSave.hidden = ro;
@@ -2007,7 +2070,7 @@ details.steps ol > li { min-width: 0; }
     setSaving(true);
     store.saveLot(key, doc).then(function () {
       return store.appendArchive(key, entry).then(
-        function () { closeDlg(dlgLot); toast("تم الحفظ"); },
+        function () { closeDlg(dlgLot); savedToast(nd); },
         function () {
           if (editing) editing.pending = { key: key, entry: entry };
           $("lot-fields").disabled = true;
@@ -2173,6 +2236,83 @@ details.steps ol > li { min-width: 0; }
       else toast("تعذّر تجهيز الملف. حاول مرة أخرى.");
     }).then(function () { setExportBusy(false); });
   }
+
+  /* ---------- fumigation notice, cell archive export, archive clearing ---------- */
+  function savedToast(nd) {
+    var fu = nd.status === "live" ? fumInfo(nd, todayISO()) : null;
+    if (fu) toast("نشاط حي. " + fumText(fu), 7000); else toast("تم الحفظ");
+  }
+  function paintFum() {
+    var box = $("fum-box"), fu = checkedStatus() === "live" ? fumInfo({ status: "live", inspected: $("f-inspected").value || todayISO() }, todayISO()) : null;
+    box.hidden = !fu;
+    if (fu) { box.setAttribute("data-tone", fu.re ? "re" : "fum"); box.textContent = fumText(fu); }
+  }
+  $("f-inspected").addEventListener("input", paintFum);
+  $("seg").addEventListener("change", paintFum);
+
+  var exportingArch = false, XL_LABEL = "تصدير الأرشيف (إكسل)";
+  function exportCellArchive() {
+    if (!editing || exportingArch || !store || !downloadsCap) return;
+    var key = editing.key, k = parseKey(key), btn = $("btn-arch-xl"), X = null;
+    exportingArch = true;
+    btn.disabled = true;
+    btn.textContent = "جارٍ التجهيز…";
+    loadExcelJS().then(function (x) {
+      X = x;
+      return store.getArchive(key);
+    }).then(function (list) {
+      var rows = list.map(normalizeEntry).sort(byAtDesc);
+      return resolveNames(rows.map(function (e) { return e.by; })).then(function (names) {
+        var wb = new X.Workbook();
+        wb.creator = "نظام الجودة";
+        wb.created = new Date();
+        var ws = wb.addWorksheet("أرشيف الخلية", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
+        var heads = [["التاريخ والوقت", 20], ["الحدث", 14], ["رقم / اسم اللوط", 18], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ الفحص", 15], ["ملاحظات", 40], ["بواسطة", 16]];
+        heads.forEach(function (h, i) { ws.getColumn(i + 1).width = h[1]; xlHead(ws.getCell(1, i + 1), h[0]); });
+        ws.getRow(1).height = 30;
+        rows.forEach(function (en, ri) {
+          var n = ri + 2, who = en.by ? (names.get(en.by) || "مستخدم") : "";
+          var vals = [xlDateTime(en.at), en.t === "clear" ? "تفريغ الخلية" : "حفظ", en.l, xlDate(en.p), en.s ? WORD[en.s] : (en.t === "save" ? WORD.unchecked : ""), xlDate(en.i), en.n, who];
+          vals.forEach(function (v, i) {
+            var cl = ws.getCell(n, i + 1);
+            cl.value = v === "" ? null : v;
+            xlBody(cl, i === 6, i === 6);
+          });
+          ws.getCell(n, 1).numFmt = "dd/mm/yyyy hh:mm";
+          ws.getCell(n, 4).numFmt = "dd/mm/yyyy";
+          ws.getCell(n, 6).numFmt = "dd/mm/yyyy";
+          if (en.s) {
+            var sc = ws.getCell(n, 5);
+            sc.fill = xlSolid(XL[en.s].fill);
+            sc.font = { name: XL_FONT, size: 11, bold: true, color: { argb: XL[en.s].font } };
+          }
+        });
+        ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: heads.length } };
+        return wb.xlsx.writeBuffer();
+      });
+    }).then(function (buf) {
+      var name = "archive-" + (k ? "part" + k.pid + "-row" + k.r + "-col" + k.c : "cell") + "-" + todayISO() + ".xlsx";
+      return downloadsCap.save({ filename: name, data: new Blob([buf], { type: XLSX_MIME }) });
+    }).then(function () {
+      toast("تم حفظ ملف الإكسل");
+    }, function (ex) {
+      if (ex && ex.code === "declined") return;
+      toast(ex && ex.message === "exceljs_load" ? "تعذّر تحميل مكتبة الإكسل. تحقق من الاتصال وحاول مرة أخرى." : "تعذّر تجهيز الملف. حاول مرة أخرى.");
+    }).then(function () { exportingArch = false; btn.disabled = false; btn.textContent = XL_LABEL; });
+  }
+  $("btn-arch-xl").addEventListener("click", exportCellArchive);
+  $("btn-arch-clear").addEventListener("click", function () {
+    var btn = $("btn-arch-clear");
+    if (!editing || saving || !store) return;
+    if (btn.getAttribute("data-armed") !== "1") { arm(btn, "اضغط مرة أخرى للحذف النهائي", "تفريغ الأرشيف"); return; }
+    clearTimeout(btn._t);
+    var key = editing.key;
+    btn.disabled = true;
+    store.clearArchive(key).then(
+      function () { toast("تم تفريغ الأرشيف"); if (editing && editing.key === key) loadArchive(key, false); },
+      function (ex) { toast(writeError(ex)); }
+    ).then(function () { btn.disabled = false; disarm(btn, "تفريغ الأرشيف"); });
+  });
 
   /* ---------- events ---------- */
   [dlgLot, dlgSet].forEach(function (dg) {
