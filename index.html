@@ -461,6 +461,9 @@ details.steps ol { margin: 0; padding: 0 22px 14px 0; display: grid; grid-templa
 details.steps ol > li { min-width: 0; }
 .chk { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; }
 .chk input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; }
+.sg-sum { display: grid; gap: 4px; padding: 12px 14px; border: 1.5px dashed var(--line); border-radius: 12px; background: var(--sunken); }
+.sg-sum p { margin: 0; font-size: 13.5px; line-height: 1.7; }
+.sg-sum .btn { justify-self: start; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -636,7 +639,7 @@ details.steps ol > li { min-width: 0; }
         <button type="button" class="icon-btn" id="fl-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
       <div id="fl-body" aria-live="polite"></div>
-      <div class="sg-box" id="sg-fl"></div>
+      <div class="sg-sum" id="sg-fl"></div>
       <div class="actions">
         <button type="button" class="btn primary" id="fl-xl" disabled>تصدير (إكسل)</button>
         <button type="button" class="btn" id="fl-print" disabled>طباعة / حفظ PDF</button>
@@ -740,10 +743,28 @@ details.steps ol > li { min-width: 0; }
         <textarea id="rep-notes" rows="4" maxlength="1500" placeholder="اكتب ملاحظاتك والإجراءات التصحيحية هنا"></textarea>
         <p class="hint">تظهر في الطباعة وفي ملف الإكسل، وتُحفظ على هذا الجهاز لكل شهر.</p>
       </div>
-      <div class="sg-box" id="sg-rep"></div>
+      <div class="sg-sum" id="sg-rep"></div>
       <div class="actions">
         <button type="button" class="btn primary" id="rep-xl" disabled>تصدير التقرير (إكسل)</button>
         <button type="button" class="btn" id="rep-print">طباعة / حفظ PDF</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-sign" class="sheet" aria-labelledby="sg-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="sg-title" tabindex="-1">قبل الطباعة</h2>
+        <button type="button" class="icon-btn" id="sg-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="lead" id="sg-lead"></p>
+      <div class="field"><label for="sg-fum">المسؤول عن التبخير</label><input id="sg-fum" type="text" maxlength="40" autocomplete="off" enterkeyhint="next"></div>
+      <div class="field"><label for="sg-qm">مدير الجودة</label><input id="sg-qm" type="text" maxlength="40" autocomplete="off" enterkeyhint="next"></div>
+      <div class="field"><label for="sg-head">رئيس القطاع</label><input id="sg-head" type="text" maxlength="40" autocomplete="off" enterkeyhint="done"></div>
+      <p class="fine" id="sg-note"></p>
+      <div class="actions">
+        <button type="button" class="btn primary" id="sg-go">طباعة / حفظ PDF</button>
+        <button type="button" class="btn" id="sg-cancel">إلغاء</button>
       </div>
     </div>
   </dialog>
@@ -857,7 +878,7 @@ details.steps ol > li { min-width: 0; }
   var SETUP_KEY = "wh-standalone-v1";
   var LOCAL_KEY = "warehouse-lots-v2";
   var FB_BASE = "https://www.gstatic.com/firebasejs/10.14.1/";
-  var APP_VERSION = "1.0";
+  var APP_VERSION = "1.1";
   var RULES = [
     "rules_version = '2';",
     "service cloud.firestore {",
@@ -1263,6 +1284,14 @@ details.steps ol > li { min-width: 0; }
         });
       },
       deleteFum: function (id) { return getDb().then(function (x) { return settleWrite(x.F.deleteDoc(ref(x, "fumlog", id))); }); },
+      getConf: function (name) {
+        return getDb().then(function (x) {
+          return x.F.getDoc(ref(x, "config", name)).then(function (sn) { return sn.exists() ? sn.data() : null; });
+        });
+      },
+      saveConf: function (name, o) {
+        return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "config", name), o)); });
+      },
       getHub: function () {
         return getDb().then(function (x) {
           return x.F.getDoc(x.F.doc(x.db, "warehouses", baseKey || key, "config", "hub")).then(function (sn) { return sn.exists() ? sn.data() : null; });
@@ -2751,11 +2780,12 @@ details.steps ol > li { min-width: 0; }
       return "<tr><td>" + fmtDate(r.d) + "</td><td>" + esc(r.label || "بدون اسم") + "</td><td>" + esc(partName(k ? k.pid : "")) + (k ? " ص" + k.r + " ع" + k.c : "") + "</td><td>" + esc(r.mat) + "</td><td>" + esc(r.dose) + "</td><td>" + daysText(r.days) + "</td><td>" + esc(r.who) + "</td><td>" + esc(r.note) + "</td></tr>";
     }).join("") + "</table>";
     h += signHTML();
+    h += printFoot();
     $("print-area").innerHTML = h;
     window.print();
   }
   $("fl-xl").addEventListener("click", exportFumLog);
-  $("fl-print").addEventListener("click", printFumLog);
+  $("fl-print").addEventListener("click", function () { if (flList.length) askSigns(printFumLog); });
 
   /* ---------- quick inspection round ---------- */
   var rd = { list: [], i: 0, done: { clean: 0, dead: 0, live: 0 }, skip: 0, busy: false };
@@ -3224,31 +3254,131 @@ details.steps ol > li { min-width: 0; }
     });
     return '<svg class="trend" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="اتجاه نسبة الإصابة خلال آخر 6 شهور">' + g + "</svg>";
   }
-  /* ---------- names printed under the signature lines ---------- */
-  var SIGN_KEYS = ["lots-sign-resp", "lots-sign-qm", "lots-sign-head"], SIGN_TITLES = ["المسؤول عن الإعداد", "مدير الجودة", "رئيس القطاع"];
-  function signGet(i) { try { return localStorage.getItem(SIGN_KEYS[i]) || ""; } catch (e) { return ""; } }
+  /* ---------- names printed under the signature lines ----------
+     Three names (fumigation officer, quality manager, sector head). They are asked for in a small sheet
+     every time a printout is requested, kept on this device, and shared between devices through the
+     warehouse's config/signs document when the app is connected to the cloud. */
+  var SIGN_FIELDS = [
+    { k: "fum", title: "المسؤول عن التبخير" },
+    { k: "qm", title: "مدير الجودة" },
+    { k: "head", title: "رئيس القطاع" }
+  ];
+  var signs = { fum: "", qm: "", head: "", at: 0 }, signCtx = { after: null, dirty: false };
+  function cleanSign(v) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 40); }
+  function signsKey() { return "lots-signs-v2-" + whActive; }
+  function signsAny(o) { return SIGN_FIELDS.some(function (f) { return !!(o && o[f.k]); }); }
+  function signsReadLocal() {
+    var o = null;
+    try { o = JSON.parse(localStorage.getItem(signsKey()) || "null"); } catch (e) { o = null; }
+    if (o && typeof o === "object") return { fum: cleanSign(o.fum), qm: cleanSign(o.qm), head: cleanSign(o.head), at: +o.at || 0 };
+    var old = { fum: "", qm: "", head: "", at: 0 };
+    if (whActive === "1") {
+      /* names typed in the previous version of this screen (kept per device) */
+      try {
+        old.qm = cleanSign(localStorage.getItem("lots-sign-qm"));
+        old.head = cleanSign(localStorage.getItem("lots-sign-head"));
+      } catch (e) { /* none */ }
+    }
+    return old;
+  }
+  function signsWriteLocal() {
+    try { localStorage.setItem(signsKey(), JSON.stringify(signs)); } catch (e) { /* not saved */ }
+  }
+  function signsDoc() { return { fum: signs.fum, qm: signs.qm, head: signs.head, at: signs.at, by: state.myId || "" }; }
   function signHTML() {
-    return '<div class="pr-sign">' + SIGN_TITLES.map(function (t, i) {
-      var n = signGet(i) || (i === 0 ? state.myId || "" : "");
-      return "<div>" + t + (n ? "<br><b>" + esc(n) + "</b>" : "") + "</div>";
+    return '<div class="pr-sign">' + SIGN_FIELDS.map(function (f) {
+      var n = signs[f.k];
+      return "<div>" + f.title + (n ? "<br><b>" + esc(n) + "</b>" : "") + "</div>";
     }).join("") + "</div>";
   }
-  function signFields(box) {
-    box.innerHTML = '<p class="hint">أسماء التوقيع في الطباعة (تُحفظ على هذا الجهاز):</p>' + ["اسم المسؤول عن الإعداد", "اسم مدير الجودة", "اسم رئيس القطاع"].map(function (l, i) {
-      return '<div class="field"><label>' + l + '</label><input type="text" maxlength="40" data-sg="' + i + '"></div>';
-    }).join("");
-    box.addEventListener("input", function (e) {
-      var el = e.target, i = el && el.getAttribute ? parseInt(el.getAttribute("data-sg"), 10) : NaN;
-      if (isNaN(i)) return;
-      try { if (el.value.trim()) localStorage.setItem(SIGN_KEYS[i], el.value.trim()); else localStorage.removeItem(SIGN_KEYS[i]); } catch (err) { /* not saved */ }
-    });
+  function printFoot() {
+    return '<p class="pr-foot">أُعدّ' + (state.myId ? " بواسطة " + esc(state.myId) : "") + " من نظام فحص المخزون · " + fmtDate(todayISO()) + "</p>";
   }
+  /* the short summary inside the fumigation-log and monthly-report sheets */
   function fillSign(box) {
-    Array.prototype.forEach.call(box.querySelectorAll("input[data-sg]"), function (el) {
-      var i = parseInt(el.getAttribute("data-sg"), 10);
-      el.value = signGet(i) || (i === 0 ? state.myId || "" : "");
-    });
+    var any = signsAny(signs), h = "<p><b>أسماء التوقيع في الورقة المطبوعة</b></p>";
+    if (any) {
+      h += SIGN_FIELDS.map(function (f) {
+        return "<p>" + f.title + ": " + (signs[f.k] ? "<b>" + esc(signs[f.k]) + "</b>" : '<span class="fine">لم تُكتب</span>') + "</p>";
+      }).join("");
+    } else h += '<p class="fine">لم تُكتب أسماء بعد، وستُطبع خطوط التوقيع فاضية.</p>';
+    h += '<button type="button" class="btn small" data-sg-edit>' + (any ? "تعديل الأسماء" : "كتابة الأسماء") + "</button>";
+    box.innerHTML = h;
+    box.setAttribute("data-empty", any ? "0" : "1");
   }
+  function signFields(box) {
+    box.addEventListener("click", function (e) {
+      if (e.target.closest && e.target.closest("[data-sg-edit]")) openSignDialog(null);
+    });
+    fillSign(box);
+  }
+  function paintSigns() { fillSign($("sg-rep")); fillSign($("sg-fl")); }
+  function fillSignFields() { SIGN_FIELDS.forEach(function (f) { $("sg-" + f.k).value = signs[f.k] || ""; }); }
+  /* a newer copy from the cloud replaces the one on this device */
+  function applySigns(o) {
+    if (!o || typeof o !== "object") return;
+    var at = +o.at || 0;
+    if (at <= signs.at) return;
+    signs = { fum: cleanSign(o.fum), qm: cleanSign(o.qm), head: cleanSign(o.head), at: at };
+    signsWriteLocal();
+    paintSigns();
+    if ($("dlg-sign").open && !signCtx.dirty) fillSignFields();
+  }
+  function loadSignsFromStore() {
+    if (!store || !store.getConf) return;
+    store.getConf("signs").then(function (o) {
+      if (o) { applySigns(o); return; }
+      /* nothing shared yet: publish the names that were typed on this device */
+      if (signsAny(signs) && state.canWrite !== false) {
+        if (!signs.at) { signs.at = Date.now(); signsWriteLocal(); }
+        store.saveConf("signs", signsDoc()).then(null, function () { /* retried on the next save */ });
+      }
+    }, function () { /* offline: keep what is on this device */ });
+  }
+  function saveSigns(v, say) {
+    var n = { fum: cleanSign(v.fum), qm: cleanSign(v.qm), head: cleanSign(v.head), at: Date.now() };
+    if (n.fum === signs.fum && n.qm === signs.qm && n.head === signs.head) return;
+    signs = n;
+    signsWriteLocal();
+    paintSigns();
+    if (store && store.saveConf && state.canWrite !== false) {
+      store.saveConf("signs", signsDoc()).then(function () { if (say) toast("تم حفظ الأسماء وتزامنت مع الأجهزة"); }, function (ex) { toast(writeError(ex)); });
+    } else if (say) toast("تم حفظ الأسماء على هذا الجهاز");
+  }
+  function openSignDialog(after) {
+    signCtx.after = after || null;
+    signCtx.dirty = false;
+    fillSignFields();
+    $("sg-title").textContent = after ? "قبل الطباعة" : "أسماء التوقيع";
+    $("sg-lead").textContent = after
+      ? "اكتب أسماء المسؤولين لتظهر تحت خطوط التوقيع في الورقة المطبوعة. اترك الخانة فاضية لو هتوقّع بخط اليد."
+      : "اكتب أسماء المسؤولين لتظهر تحت خطوط التوقيع عند الطباعة.";
+    $("sg-note").textContent = state.mode === "db" && state.canWrite !== false && store && store.saveConf
+      ? "تُحفظ الأسماء وتظهر تلقائيًا على كل الأجهزة المتصلة بهذا المخزن."
+      : "تُحفظ الأسماء على هذا الجهاز.";
+    $("sg-go").textContent = after ? "طباعة / حفظ PDF" : "حفظ الأسماء";
+    openDlg($("dlg-sign"));
+    if (store && store.getConf) store.getConf("signs").then(applySigns, function () { /* offline */ });
+  }
+  function askSigns(after) { openSignDialog(after); }
+  $("dlg-sign").addEventListener("input", function () { signCtx.dirty = true; });
+  $("dlg-sign").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || !e.target || e.target.tagName !== "INPUT") return;
+    e.preventDefault();
+    var ids = SIGN_FIELDS.map(function (f) { return "sg-" + f.k; }), i = ids.indexOf(e.target.id);
+    if (i >= 0 && i < ids.length - 1) $(ids[i + 1]).focus(); else $("sg-go").click();
+  });
+  $("sg-go").addEventListener("click", function () {
+    var vals = {}, after = signCtx.after;
+    SIGN_FIELDS.forEach(function (f) { vals[f.k] = $("sg-" + f.k).value; });
+    saveSigns(vals, !after);
+    signCtx.after = null;
+    closeDlg($("dlg-sign"));
+    if (after) after();
+  });
+  $("sg-cancel").addEventListener("click", function () { closeDlg($("dlg-sign")); });
+  $("sg-close").addEventListener("click", function () { closeDlg($("dlg-sign")); });
+  signs = signsReadLocal();
   signFields($("sg-rep"));
   signFields($("sg-fl"));
   function repNotesKey() { return "lots-rep-notes-" + whActive + "-" + $("rep-month").value; }
@@ -3287,11 +3417,14 @@ details.steps ol > li { min-width: 0; }
     var nt = ($("rep-notes").value || "").trim();
     h += "<h2>ملاحظات وإجراءات تصحيحية</h2>" + (nt ? '<p class="pr-notes">' + esc(nt).replace(/\n/g, "<br>") + "</p>" : '<div class="pr-lines"><div></div><div></div><div></div><div></div></div>');
     h += signHTML();
-    h += '<p class="pr-foot">أُعدّ من نظام فحص المخزون · ' + fmtDate(todayISO()) + "</p>";
+    h += printFoot();
     $("print-area").innerHTML = h;
     window.print();
   }
-  $("rep-print").addEventListener("click", printReport);
+  $("rep-print").addEventListener("click", function () {
+    if (!repData || !repData.total) { toast("لا توجد فحوصات لهذا الشهر"); return; }
+    askSigns(printReport);
+  });
   $("btn-report").addEventListener("click", function () {
     if (state.loading || !store) { toast("انتظر تحميل البيانات"); return; }
     if (!$("rep-month").value) $("rep-month").value = todayISO().slice(0, 7);
@@ -3478,6 +3611,7 @@ details.steps ol > li { min-width: 0; }
     S.bind({ snapshot: function () { return { layout: state.layout, lots: state.lots }; }, store: store });
     store.start(callbacks);
     if (store.getClimate) store.getClimate(climateFrom()).then(setClimate, function () { /* later */ });
+    loadSignsFromStore();
     if (store.getHub) store.getHub().then(function (h) { whList = normalizeHub(h); if (!whList.some(function (w) { return w.id === whActive; })) { switchWh("1"); return; } render(); }, function () { /* names load later */ });
   }
   boot();
