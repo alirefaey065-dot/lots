@@ -321,7 +321,7 @@ textarea { min-height: 84px; resize: vertical; }
 @media print {
   @page { size: A4; margin: 14mm; }
   body > :not(#print-area) { display: none !important; }
-  html, body { background: #fff !important; }
+  html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
   #print-area { display: block; background: #fff; color: #111; font-size: 12px; line-height: 1.6; }
   #print-area * { color: #111; }
   .pr-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid #111; }
@@ -338,6 +338,19 @@ textarea { min-height: 84px; resize: vertical; }
   .pr-sign div { padding-top: 6px; border-top: 1px solid #111; margin-top: 34px; }
   .pr-foot { margin-top: 18px; font-size: 10px; text-align: center; }
 }
+.top-actions .icon-btn { position: relative; background: color-mix(in srgb, currentColor 10%, transparent); }
+#btn-plan { color: #d97706; }
+#btn-fifo { color: #3b82f6; }
+#btn-report { color: #16a34a; }
+#btn-sync { color: #8b5cf6; }
+#btn-settings { color: #64748b; }
+.top-actions .icon-btn[aria-label]::after { content: attr(aria-label); position: absolute; top: calc(100% + 8px); left: 50%; z-index: 60; padding: 5px 9px; border-radius: 8px; background: #1f2933; color: #fff; font-size: 12px; font-weight: 600; line-height: 1.4; white-space: nowrap; pointer-events: none; opacity: 0; transform: translate(-50%, -3px); transition: opacity .12s, transform .12s; }
+.top-actions .icon-btn[aria-label]:hover::after, .top-actions .icon-btn[aria-label]:focus-visible::after, .top-actions .icon-btn[aria-label]:active::after { opacity: 1; transform: translate(-50%, 0); }
+.trend { display: block; width: 100%; max-width: 460px; height: auto; margin: 4px auto; }
+.hot { display: block; max-width: 100%; height: auto; margin: 6px 0; }
+#btn-climate { color: #0891b2; }
+.cl-note { padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); font-size: 14px; font-weight: 600; line-height: 1.6; margin-bottom: 8px; }
+.cl-note[data-tone="bad"] { border-width: 2.5px; border-color: var(--live-line); background: var(--live-bg); color: var(--live-fg); }
 .fum[hidden] { display: none; }
 .fum[data-tone="re"] { border-width: 2.5px; }
 .c-fum { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; line-height: 1.25; color: var(--live-fg); }
@@ -448,6 +461,7 @@ details.steps ol > li { min-width: 0; }
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg>
             <span id="export-label">تصدير إكسل</span>
           </button>
+          <button type="button" class="icon-btn" id="btn-climate" aria-label="الحرارة والرطوبة"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></button>
           <button type="button" class="icon-btn" id="btn-plan" aria-label="خطة الفحص اليوم"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></button>
           <button type="button" class="icon-btn" id="btn-fifo" aria-label="ترتيب الصرف والتنبيهات"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></button>
           <button type="button" class="icon-btn" id="btn-report" aria-label="تقرير شهري"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button>
@@ -556,8 +570,6 @@ details.steps ol > li { min-width: 0; }
     </form>
   </dialog>
 
-  <div id="print-area" aria-hidden="true"></div>
-
   <dialog id="dlg-wh" class="sheet" aria-labelledby="wh-title">
     <div class="sheet-in">
       <div class="sheet-head">
@@ -579,13 +591,31 @@ details.steps ol > li { min-width: 0; }
     </div>
   </dialog>
 
+  <dialog id="dlg-climate" class="sheet" aria-labelledby="cl-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="cl-title" tabindex="-1">الحرارة والرطوبة</h2>
+        <button type="button" class="icon-btn" id="cl-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="hint">حد التنبيه: حرارة 25°م أو أكثر مع رطوبة 70% أو أكثر (قيم شائعة لنشاط حشرات المخازن، عدّلها في الكود لو إجراءاتكم تختلف). عند تجاوزه ترتفع أولوية الفحص لكل اللوطات.</p>
+      <div id="cl-form">
+        <div class="field"><label for="cl-date">التاريخ</label><input id="cl-date" type="date"></div>
+        <div class="field"><label for="cl-t">الحرارة (°م)</label><input id="cl-t" type="number" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label for="cl-h">الرطوبة النسبية (%)</label><input id="cl-h" type="number" inputmode="numeric" min="0" max="100"></div>
+        <p class="err" id="cl-err" role="alert" hidden></p>
+        <div class="actions"><button type="button" class="btn primary" id="cl-save">حفظ القراءة</button></div>
+      </div>
+      <div id="cl-body" aria-live="polite"></div>
+    </div>
+  </dialog>
+
   <dialog id="dlg-plan" class="sheet" aria-labelledby="plan-title">
     <div class="sheet-in">
       <div class="sheet-head">
         <h2 id="plan-title" tabindex="-1">خطة الفحص اليوم</h2>
         <button type="button" class="icon-btn" id="plan-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
-      <p class="hint">الأولوية من 0 إلى 100، وتُحسب من: انتهاء التبخير، مدة عدم الفحص، وجود نشاط حي في اللوطات المجاورة، آخر نشاط ميت، وعمر اللوط. اضغط على لوط لفتحه.</p>
+      <p class="hint">الأولوية من 0 إلى 100، وتُحسب من: انتهاء التبخير، مدة عدم الفحص، وجود نشاط حي في اللوطات المجاورة، آخر نشاط ميت، وعمر اللوط، والظروف المناخية. اضغط على لوط لفتحه.</p>
       <div id="plan-body" aria-live="polite"></div>
     </div>
   </dialog>
@@ -593,13 +623,18 @@ details.steps ol > li { min-width: 0; }
   <dialog id="dlg-fifo" class="sheet" aria-labelledby="fifo-title">
     <div class="sheet-in">
       <div class="sheet-head">
-        <h2 id="fifo-title" tabindex="-1">ترتيب الصرف (الأقدم أولًا)</h2>
+        <h2 id="fifo-title" tabindex="-1">ترتيب الصرف والفحص الدوري</h2>
         <button type="button" class="icon-btn" id="fifo-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
       <div class="field">
         <label for="fifo-days">تنبيه عند عمر اللوط (يوم)</label>
         <input id="fifo-days" type="number" inputmode="numeric" min="1" max="3650">
         <p class="hint" id="fifo-hint"></p>
+      </div>
+      <div class="field">
+        <label for="insp-days">فترة الفحص الدوري (يوم)</label>
+        <input id="insp-days" type="number" inputmode="numeric" min="1" max="365">
+        <p class="hint">اللوط اللي عدّى عليه أكثر من هذه المدة من غير فحص يظهر في فلتر "فحص متأخر" وترتفع أولويته في خطة الفحص. تتزامن مع كل الأجهزة.</p>
       </div>
       <div id="fifo-body" aria-live="polite"></div>
     </div>
@@ -724,6 +759,7 @@ details.steps ol > li { min-width: 0; }
   </dialog>
 </div>
 
+<div id="print-area" aria-hidden="true"></div>
 <script>
 /* standalone shell: first-run setup, optional cloud sync (Firestore), share link, backup, file saving.
    The page script talks to this through window.__standalone. */
@@ -1102,7 +1138,7 @@ details.steps ol > li { min-width: 0; }
         if (key === baseKey) return Promise.reject(new Error("base_warehouse"));
         return getDb().then(function (x) {
           var seq = Promise.resolve();
-          ["lots", "entries", "config"].forEach(function (name) {
+          ["lots", "entries", "config", "climate"].forEach(function (name) {
             seq = seq.then(function () {
               return getDocsSmart(x, col(x, name)).then(function (sn) {
                 var docs = sn.docs, s2 = Promise.resolve();
@@ -1115,6 +1151,16 @@ details.steps ol > li { min-width: 0; }
           });
           return seq;
         });
+      },
+      getClimate: function (from) {
+        return getDb().then(function (x) {
+          return getDocsSmart(x, x.F.query(col(x, "climate"), x.F.where("d", ">=", from))).then(function (sn) {
+            return sn.docs.map(function (d) { var v = d.data(); return { d: v.d, t: +v.t, h: +v.h, by: v.by || "" }; });
+          });
+        });
+      },
+      saveClimate: function (r) {
+        return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "climate", r.d), { d: r.d, t: r.t, h: r.h, by: r.by || "", at: Date.now() })); });
       },
       getHub: function () {
         return getDb().then(function (x) {
@@ -1488,7 +1534,8 @@ details.steps ol > li { min-width: 0; }
       cols: clampInt(raw.cols, 1, LIMITS.cols, DEFAULT_LAYOUT.cols),
       parts: parts,
       name: typeof raw.name === "string" ? raw.name.slice(0, 40) : "",
-      fifo: typeof raw.fifo === "number" && raw.fifo >= 1 && raw.fifo <= 3650 ? Math.round(raw.fifo) : 0
+      fifo: typeof raw.fifo === "number" && raw.fifo >= 1 && raw.fifo <= 3650 ? Math.round(raw.fifo) : 0,
+      insp: typeof raw.insp === "number" && raw.insp >= 1 && raw.insp <= 365 ? Math.round(raw.insp) : 0
     };
   }
   function totalLots(layout) {
@@ -1500,7 +1547,7 @@ details.steps ol > li { min-width: 0; }
     return l.produced || l.label || l.notes ? "unchecked" : "empty";
   }
   function summarize(lots, layout) {
-    var out = { live: 0, dead: 0, clean: 0, unchecked: 0, empty: 0, fum: 0, recheck: 0, old: 0, risk: 0, total: totalLots(layout) }, td = todayISO();
+    var out = { live: 0, dead: 0, clean: 0, unchecked: 0, empty: 0, fum: 0, recheck: 0, old: 0, risk: 0, late: 0, total: totalLots(layout) }, td = todayISO();
     layout.parts.forEach(function (p) {
       for (var r = 1; r <= p.rows; r++) {
         for (var c = 1; c <= layout.cols; c++) {
@@ -1508,6 +1555,7 @@ details.steps ol > li { min-width: 0; }
           out[s0]++;
           if (s0 !== "empty") { var a0 = lotAge(lt, td); if (a0 !== null && a0 >= fifoDays) out.old++; }
           var k0 = riskInfo(lots, p.id, r, c, td); if (k0 && k0.score >= 35) out.risk++;
+          if (lateDays(lt, td) !== null) out.late++;
           if (s0 === "live") { var f0 = fumInfo(lt, td); if (f0) out[f0.re ? "recheck" : "fum"]++; }
         }
       }
@@ -1642,9 +1690,22 @@ details.steps ol > li { min-width: 0; }
     var o = (whList || []).filter(function (w) { return w.id === id; })[0];
     return o ? o.name : "";
   }
-  var FIFO_KEY = "lots-fifo-days", fifoDays = 90;
+  var FIFO_KEY = "lots-fifo-days", fifoDays = 90, INSP_KEY = "lots-insp-days", inspDays = 14, climateWarn = false;
+  try { var iv0 = parseInt(localStorage.getItem(INSP_KEY), 10); if (iv0 >= 1 && iv0 <= 365) inspDays = iv0; } catch (e) { /* default */ }
   try { var fv0 = parseInt(localStorage.getItem(FIFO_KEY), 10); if (fv0 >= 1 && fv0 <= 3650) fifoDays = fv0; } catch (e) { /* default */ }
   function lotAge(lot, today) { return lot && lot.produced ? daysBetween(lot.produced, today) : null; }
+  /* days beyond the periodic inspection interval (counted from the last inspection, or from production if never inspected) */
+  function lateDays(lot, td) {
+    if (!lot) return null;
+    var st = lotState(lot);
+    if (st === "empty") return null;
+    var fu = st === "live" ? fumInfo(lot, td) : null;
+    if (fu && !fu.re) return null;
+    var from = lot.inspected || lot.produced;
+    if (!from) return null;
+    var d = daysBetween(from, td);
+    return d !== null && d > inspDays ? d - inspDays : null;
+  }
   /* inspection priority 0-100: ended fumigation, days without inspection, live neighbours, recent dead activity, age */
   function riskInfo(lots, pid, r, c, td) {
     var l = lots.get(lotKey(pid, r, c)), st = lotState(l);
@@ -1654,7 +1715,7 @@ details.steps ol > li { min-width: 0; }
     var sc = 0, why = [], d = l.inspected ? daysBetween(l.inspected, td) : null;
     if (fu) { sc += 70; why.push("انتهى التبخير"); }
     if (st === "unchecked" || d === null) { sc += 30; why.push("لم يُفحص بعد"); }
-    else if (d > 7) { sc += Math.min(25, d - 7); why.push("بدون فحص " + daysText(d)); }
+    else if (d > inspDays) { sc += Math.min(25, d - inspDays); why.push("بدون فحص " + daysText(d)); }
     if (st === "dead" && d !== null && d <= 30) { sc += 15; why.push("نشاط ميت حديث"); }
     var nb = 0;
     [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(function (o) {
@@ -1664,6 +1725,7 @@ details.steps ol > li { min-width: 0; }
     if (nb) { sc += Math.min(36, nb * 12); why.push("بجواره نشاط حي (" + nb + ")"); }
     var a = lotAge(l, td);
     if (a !== null && a >= fifoDays) { sc += 10; why.push("لوط قديم"); }
+    if (climateWarn) { sc += 8; why.push("الظروف مناسبة لنشاط الحشرات"); }
     return { score: Math.min(100, sc), why: why };
   }
   /* helpers:end */
@@ -1972,8 +2034,8 @@ details.steps ol > li { min-width: 0; }
   }
   function cellHTML(p, pi, r, c) {
     if (state.loading) return '<button type="button" class="cell s-empty skel" disabled tabindex="-1" aria-hidden="true"></button>';
-    var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l), fu = st === "live" ? fumInfo(l, todayISO()) : null, ag = lotAge(l, todayISO()), od = st !== "empty" && ag !== null && ag >= fifoDays, rk = riskInfo(state.lots, p.id, r, c, todayISO()), rl = rk && rk.score >= 60 ? "hi" : rk && rk.score >= 35 ? "mid" : "";
-    var dim = state.filter !== "all" && state.filter !== st && !(state.filter === "recheck" && fu && fu.re) && !(state.filter === "old" && od) && !(state.filter === "risk" && rl);
+    var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l), fu = st === "live" ? fumInfo(l, todayISO()) : null, ag = lotAge(l, todayISO()), od = st !== "empty" && ag !== null && ag >= fifoDays, rk = riskInfo(state.lots, p.id, r, c, todayISO()), rl = rk && rk.score >= 60 ? "hi" : rk && rk.score >= 35 ? "mid" : "", ld = lateDays(l, todayISO());
+    var dim = state.filter !== "all" && state.filter !== st && !(state.filter === "recheck" && fu && fu.re) && !(state.filter === "old" && od) && !(state.filter === "risk" && rl) && !(state.filter === "late" && ld !== null);
     var hasLabel = !!(l && l.label);
     var aria = partTitle(pi) + "، الصف " + r + "، العمود " + c + (hasLabel ? "، " + l.label : "") + "، " + (l && l.produced ? "تاريخ الإنتاج " + fmtDate(l.produced) + "، " : "") + LONG[st] + (fu ? "، " + fumText(fu) : "") + (od ? "، عمر اللوط " + daysText(ag) : "") + (rl ? "، أولوية فحص " + (rl === "hi" ? "عالية" : "متوسطة") : "");
     var body = hasLabel ? '<span class="c-id">' + esc(l.label) + "</span>" : '<span class="c-id num">' + r + "-" + c + "</span>";
@@ -2004,7 +2066,7 @@ details.steps ol > li { min-width: 0; }
     return out.join("");
   }
   function render() {
-    var sig = JSON.stringify([state.layout, Array.from(state.lots.entries()), state.filter, state.view, state.loading, state.slow, state.fatal, state.mode, state.canWrite, todayISO(), fifoDays, whNameOf(whActive)]);
+    var sig = JSON.stringify([state.layout, Array.from(state.lots.entries()), state.filter, state.view, state.loading, state.slow, state.fatal, state.mode, state.canWrite, todayISO(), fifoDays, inspDays, climateWarn, whNameOf(whActive)]);
     if (sig === lastSig) return;
     lastSig = sig;
     var L = state.layout, c = summarize(state.lots, L);
@@ -2017,11 +2079,12 @@ details.steps ol > li { min-width: 0; }
     if (state.loading) {
       elChips.innerHTML = "";
     } else {
-      if ((state.filter === "unchecked" || state.filter === "empty" || state.filter === "recheck" || state.filter === "old" || state.filter === "risk") && c[state.filter] === 0) state.filter = "all";
+      if ((state.filter === "unchecked" || state.filter === "empty" || state.filter === "recheck" || state.filter === "old" || state.filter === "risk" || state.filter === "late") && c[state.filter] === 0) state.filter = "all";
       var defs = [["all", "الكل", c.total, ""], ["live", "نشاط حي", c.live, "live"], ["dead", "نشاط ميت", c.dead, "dead"], ["clean", "سليم", c.clean, "clean"]];
       if (c.recheck) defs.splice(2, 0, ["recheck", "مطلوب إعادة فحص", c.recheck, "live"]);
       if (c.old) defs.push(["old", "قديم", c.old, ""]);
       if (c.risk) defs.push(["risk", "أولوية فحص", c.risk, ""]);
+      if (c.late) defs.push(["late", "فحص متأخر", c.late, ""]);
       if (c.unchecked) defs.push(["unchecked", "لم يُفحص", c.unchecked, "unchecked"]);
       if (c.empty) defs.push(["empty", "فاضي", c.empty, "empty"]);
       elChips.innerHTML = defs.map(function (d) {
@@ -2078,9 +2141,23 @@ details.steps ol > li { min-width: 0; }
       clearArchive: function (k) { delete data.archive[k]; persist(); return Promise.resolve(); },
       deleteAll: function () {
         if (!sub || sub === "1") return Promise.reject(new Error("base_warehouse"));
-        try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-climate"); } catch (e) { /* ignore */ }
         data = { layout: null, lots: {}, archive: {} };
         return Promise.resolve();
+      },
+      getClimate: function (from) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-climate") || "{}");
+          return Promise.resolve(Object.keys(m).filter(function (d) { return d >= from; }).map(function (d) { return { d: d, t: +m[d].t, h: +m[d].h, by: m[d].by || "" }; }));
+        } catch (e) { return Promise.resolve([]); }
+      },
+      saveClimate: function (r) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-climate") || "{}");
+          m[r.d] = { t: r.t, h: r.h, by: r.by || "" };
+          localStorage.setItem(KEY + "-climate", JSON.stringify(m));
+          return Promise.resolve();
+        } catch (e) { return Promise.reject(e); }
       },
       getHub: function () { try { var r = localStorage.getItem("warehouse-lots-hub"); return Promise.resolve(r ? JSON.parse(r) : null); } catch (e) { return Promise.resolve(null); } },
       saveHub: function (h) { try { localStorage.setItem("warehouse-lots-hub", JSON.stringify(h)); return Promise.resolve(); } catch (e) { return Promise.reject(e); } },
@@ -2142,7 +2219,7 @@ details.steps ol > li { min-width: 0; }
       map.forEach(function (v, k) { m.set(k, normalizeLot(v)); });
       state.lots = m; state.gotData = true; render();
     },
-    layout: function (raw) { state.layout = normalizeLayout(raw); if (state.layout.fifo) fifoDays = state.layout.fifo; state.gotData = true; render(); },
+    layout: function (raw) { state.layout = normalizeLayout(raw); if (state.layout.fifo) fifoDays = state.layout.fifo; if (state.layout.insp) inspDays = state.layout.insp; state.gotData = true; render(); },
     ready: function () { state.loading = false; state.slow = false; render(); },
     slow: function () { state.slow = true; if (state.gotData) state.loading = false; render(); },
     synced: function () { state.syncedAt = Date.now(); state.slow = false; paintSync(); },
@@ -2385,6 +2462,7 @@ details.steps ol > li { min-width: 0; }
     if (savingSet) return;
     var layout = { cols: draft.cols, parts: draft.parts.map(function (p) { return { id: p.id, rows: p.rows }; }), name: $("s-name").value.trim() };
     if (state.layout.fifo) layout.fifo = state.layout.fifo;
+    if (state.layout.insp) layout.insp = state.layout.insp;
     if (totalLots(layout) > LIMITS.lots) {
       showErr($("set-err"), "الحد الأقصى " + lotsText(LIMITS.lots) + " في المخزن الواحد. قلّل عدد الصفوف أو عدد اللوطات في الصف.");
       return;
@@ -2447,6 +2525,65 @@ details.steps ol > li { min-width: 0; }
       else toast("تعذّر تجهيز الملف. حاول مرة أخرى.");
     }).then(function () { setExportBusy(false); });
   }
+
+  /* ---------- temperature and humidity log ---------- */
+  var CLIMATE_T = 25, CLIMATE_H = 70, climateList = [];
+  function climateFrom() { return addDaysISO(todayISO(), -90); }
+  function climateRisky(r) { return !!r && r.t >= CLIMATE_T && r.h >= CLIMATE_H; }
+  function setClimate(list) {
+    climateList = list.filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.d) && isFinite(r.t) && isFinite(r.h); }).sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
+    var last = climateList[climateList.length - 1], w = !!(last && daysBetween(last.d, todayISO()) <= 3 && climateRisky(last));
+    if (w !== climateWarn) { climateWarn = w; render(); }
+  }
+  function climateSVG(L) {
+    var pts = L.slice(-30), W = 320, H = 150, top = 12, ph = 110, n = Math.max(pts.length, 2);
+    var x = function (i) { return W - 10 - i * ((W - 20) / (n - 1)); };
+    var y = function (v) { return top + ph - ph * Math.min(100, Math.max(0, v)) / 100; };
+    var line = function (k, c) {
+      return '<polyline fill="none" stroke="' + c + '" stroke-width="2" points="' + pts.map(function (r, i) { return x(i).toFixed(1) + "," + y(r[k]).toFixed(1); }).join(" ") + '"/>' +
+        pts.map(function (r, i) { return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(r[k]).toFixed(1) + '" r="2.5" fill="' + c + '"/>'; }).join("");
+    };
+    var g = '<line x1="0" y1="' + y(0) + '" x2="' + W + '" y2="' + y(0) + '" stroke="currentColor" opacity=".35"/>' +
+      '<line x1="0" y1="' + y(CLIMATE_T) + '" x2="' + W + '" y2="' + y(CLIMATE_T) + '" stroke="#ea580c" stroke-dasharray="4 3" opacity=".6"/>' +
+      '<line x1="0" y1="' + y(CLIMATE_H) + '" x2="' + W + '" y2="' + y(CLIMATE_H) + '" stroke="#2563eb" stroke-dasharray="4 3" opacity=".6"/>';
+    return '<svg class="trend" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="الحرارة والرطوبة آخر 30 قراءة">' + g + line("t", "#ea580c") + line("h", "#2563eb") + "</svg>";
+  }
+  function paintClimate() {
+    var box = $("cl-body"), L = climateList, last = L[L.length - 1];
+    if (!last) { box.innerHTML = '<p class="fine">لا توجد قراءات بعد. سجّل أول قراءة.</p>'; return; }
+    var bad = climateRisky(last);
+    var h = '<div class="cl-note" data-tone="' + (bad ? "bad" : "ok") + '">آخر قراءة ' + fmtDate(last.d) + ": " + last.t + "°م · " + last.h + "%" + (bad ? " — الظروف مناسبة لنشاط الحشرات وتكاثرها، شدّد الفحص والتهوية." : " — ضمن الحدود.") + "</div>";
+    h += climateSVG(L) + '<p class="fine">البرتقالي: الحرارة (°م) · الأزرق: الرطوبة (%) · الخط المتقطع: حد التنبيه · أقدم قراءة على اليمين</p>';
+    h += '<div class="rep-scroll"><table class="rep-tbl"><thead><tr><th>التاريخ</th><th>الحرارة</th><th>الرطوبة</th><th>الحالة</th></tr></thead><tbody>' + L.slice(-7).reverse().map(function (r) {
+      return "<tr><td>" + fmtDate(r.d) + "</td><td>" + r.t + "°م</td><td>" + r.h + "%</td><td>" + (climateRisky(r) ? "تنبيه" : "طبيعي") + "</td></tr>";
+    }).join("") + "</tbody></table></div>";
+    box.innerHTML = h;
+  }
+  $("btn-climate").addEventListener("click", function () {
+    if (!store || !store.getClimate) { toast("القراءات غير متاحة في هذا الوضع."); return; }
+    $("cl-date").value = todayISO();
+    $("cl-form").hidden = state.canWrite === false;
+    hideErr($("cl-err"));
+    paintClimate();
+    openDlg($("dlg-climate"));
+    store.getClimate(climateFrom()).then(function (list) { setClimate(list); paintClimate(); }, function () { /* keep what we have */ });
+  });
+  $("cl-save").addEventListener("click", function () {
+    var d = $("cl-date").value, t = parseFloat($("cl-t").value), hu = parseFloat($("cl-h").value), btn = $("cl-save");
+    hideErr($("cl-err"));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || parseISO(d) === null || d > todayISO()) { showErr($("cl-err"), "اختر تاريخًا صحيحًا لا يكون في المستقبل."); return; }
+    if (!isFinite(t) || t < -20 || t > 60) { showErr($("cl-err"), "الحرارة لازم تكون بين -20 و60°م."); return; }
+    if (!isFinite(hu) || hu < 0 || hu > 100) { showErr($("cl-err"), "الرطوبة لازم تكون بين 0 و100%."); return; }
+    btn.disabled = true;
+    store.saveClimate({ d: d, t: Math.round(t * 10) / 10, h: Math.round(hu), by: state.myId || "" }).then(function () {
+      return store.getClimate(climateFrom());
+    }).then(function (list) {
+      setClimate(list); paintClimate();
+      $("cl-t").value = ""; $("cl-h").value = "";
+      toast("تم حفظ القراءة");
+    }, function (ex) { showErr($("cl-err"), writeError(ex)); }).then(function () { btn.disabled = false; });
+  });
+  $("cl-close").addEventListener("click", function () { closeDlg($("dlg-climate")); });
 
   /* ---------- several warehouses ---------- */
   function paintWhList() {
@@ -2561,7 +2698,7 @@ details.steps ol > li { min-width: 0; }
   var fifoTimer = null;
   function saveFifo(v) {
     var l = state.layout;
-    store.saveLayout({ cols: l.cols, parts: l.parts.map(function (p) { return { id: p.id, rows: p.rows }; }), name: l.name, fifo: v }).then(
+    store.saveLayout({ cols: l.cols, parts: l.parts.map(function (p) { return { id: p.id, rows: p.rows }; }), name: l.name, fifo: fifoDays, insp: inspDays }).then(
       function () { toast("تم حفظ الحد وتزامن مع الأجهزة"); },
       function (ex) { toast(writeError(ex)); }
     );
@@ -2569,6 +2706,7 @@ details.steps ol > li { min-width: 0; }
   $("btn-fifo").addEventListener("click", function () {
     if (state.loading) { toast("انتظر تحميل البيانات"); return; }
     $("fifo-days").value = fifoDays;
+    $("insp-days").value = inspDays;
     $("fifo-hint").textContent = 'اللوطات التي وصلت لهذا العمر تظهر عليها علامة "قديم" في الخريطة. ' + (state.canWrite === false ? "وضع العرض فقط: التغيير هنا على هذا الجهاز فقط." : "الحد يتزامن مع كل الأجهزة.");
     paintFifo();
     openDlg($("dlg-fifo"));
@@ -2581,6 +2719,15 @@ details.steps ol > li { min-width: 0; }
     clearTimeout(fifoTimer);
     if (state.canWrite !== false && store) fifoTimer = setTimeout(function () { saveFifo(v); }, 700);
     paintFifo();
+    render();
+  });
+  $("insp-days").addEventListener("input", function () {
+    var v = parseInt($("insp-days").value, 10);
+    if (!(v >= 1 && v <= 365)) return;
+    inspDays = v;
+    try { localStorage.setItem(INSP_KEY, String(v)); } catch (e) { /* not saved */ }
+    clearTimeout(fifoTimer);
+    if (state.canWrite !== false && store) fifoTimer = setTimeout(function () { saveFifo(); }, 700);
     render();
   });
   $("fifo-close").addEventListener("click", function () { closeDlg($("dlg-fifo")); });
@@ -2627,6 +2774,8 @@ details.steps ol > li { min-width: 0; }
       return '<div class="rep-box" data-k="' + c[2] + '"><b>' + c[1] + "</b><span>" + c[0] + "</span></div>";
     }).join("") + "</div>";
     h += '<p class="rep-rate">نسبة الإصابة (حي + ميت): <b>' + pctText(r.live + r.dead, r.total) + "</b><br>نسبة النشاط الحي: <b>" + pctText(r.live, r.total) + "</b></p>";
+    h += '<h3 class="rep-h">اتجاه آخر 6 شهور</h3>' + trendSVG(repArchive, ym) + '<p class="fine">برتقالي: نسبة الإصابة (حي + ميت) · أحمر: النشاط الحي</p>';
+    h += hotHTML(repArchive, false);
     h += '<div class="rep-scroll"><table class="rep-tbl"><thead><tr><th>الجزء</th><th>فحوصات</th><th>حي</th><th>ميت</th><th>سليم</th><th>إصابة</th></tr></thead><tbody>';
     h += Object.keys(r.parts).map(function (pid) {
       var p = r.parts[pid];
@@ -2699,6 +2848,54 @@ details.steps ol > li { min-width: 0; }
       toast(ex && ex.message === "exceljs_load" ? "تعذّر تحميل مكتبة الإكسل. تحقق من الاتصال وحاول مرة أخرى." : "تعذّر تجهيز الملف. حاول مرة أخرى.");
     }).then(function () { repBusy = false; btn.disabled = !repData || !repData.total; });
   }
+  /* hotspot map: where live activity was found again and again in the last 12 months */
+  function hotHTML(archive, print) {
+    var from = addDaysISO(todayISO(), -365), best = new Map(), cnt = {}, tot = 0;
+    archive.forEach(function (list, key) {
+      (list || []).map(normalizeEntry).forEach(function (en) {
+        if (en.t !== "save" || !en.s || !en.i || en.i < from) return;
+        var id = key + "|" + en.i, o = best.get(id);
+        if (!o || en.at > o.at) best.set(id, { k: key, s: en.s, at: en.at });
+      });
+    });
+    best.forEach(function (o) { if (o.s === "live") { cnt[o.k] = (cnt[o.k] || 0) + 1; tot++; } });
+    var h = (print ? "<h2>" : '<h3 class="rep-h">') + "بؤر النشاط الحي (آخر 12 شهر)" + (print ? "</h2>" : "</h3>"), cls = print ? "" : ' class="fine"';
+    if (!tot) return h + "<p" + cls + ">لا توجد اكتشافات لنشاط حي في آخر 12 شهر.</p>";
+    var L = state.layout, cs = Math.max(6, Math.min(14, Math.floor(300 / L.cols))), W = L.cols * (cs + 1), y = 0, g = "", rowT = {}, colT = {};
+    L.parts.forEach(function (p) {
+      for (var r = 1; r <= p.rows; r++, y += cs + 1) {
+        for (var c = 1; c <= L.cols; c++) {
+          var n = cnt[lotKey(p.id, r, c)] || 0, x = W - c * (cs + 1);
+          if (n) { rowT[p.id + "|" + r] = (rowT[p.id + "|" + r] || 0) + n; colT[c] = (colT[c] || 0) + n; }
+          g += '<rect x="' + x + '" y="' + y + '" width="' + cs + '" height="' + cs + '" rx="2"' + (n ? ' fill="' + (n >= 3 ? "#dc2626" : n === 2 ? "#fb923c" : "#fcd34d") + '"' : ' fill="currentColor" fill-opacity=".12"') + "><title>" + esc(partName(p.id)) + " · صف " + r + " · عمود " + c + " · " + n + "</title></rect>";
+        }
+      }
+      y += 9;
+    });
+    var top = function (o, label) { return Object.keys(o).sort(function (a, b) { return o[b] - o[a]; }).slice(0, 3).map(function (k) { return label(k) + " (" + o[k] + ")"; }).join("، "); };
+    var note = "إجمالي الاكتشافات: <b>" + tot + "</b><br>أكثر الصفوف تكرارًا: " + top(rowT, function (k) { var a = k.split("|"); return esc(partName(a[0])) + " صف " + a[1]; }) + "<br>أكثر الأعمدة تكرارًا: " + top(colT, function (k) { return "عمود " + k; }) + "<br>الأصفر: اكتشاف واحد · البرتقالي: اثنان · الأحمر: ثلاثة أو أكثر";
+    return h + '<svg class="hot" viewBox="0 0 ' + W + " " + y + '" width="' + W + '" role="img" aria-label="خريطة بؤر النشاط الحي">' + g + "</svg><p" + cls + ">" + note + "</p>";
+  }
+  /* trend of the infestation rate over the last 6 months (inline SVG, oldest month on the right) */
+  function trendSVG(archive, ym) {
+    var ms = [], y = parseInt(ym.slice(0, 4), 10), m = parseInt(ym.slice(5), 10), i;
+    for (i = 5; i >= 0; i--) { var mm = m - i, yy = y; while (mm < 1) { mm += 12; yy--; } ms.push(yy + "-" + pad2(mm)); }
+    var rs = ms.map(function (k) { return monthReport(archive, k); });
+    var W = 320, H = 170, top = 22, ph = 118, step = W / 6, bw = 17, mx = 0.1;
+    rs.forEach(function (r) { if (r.total) mx = Math.max(mx, (r.live + r.dead) / r.total); });
+    mx = Math.ceil(mx * 10) / 10;
+    var g = '<line x1="0" y1="' + (top + ph) + '" x2="' + W + '" y2="' + (top + ph) + '" stroke="currentColor" opacity=".35"/>';
+    rs.forEach(function (r, j) {
+      var cx = W - (j + 0.5) * step;
+      g += '<text x="' + cx + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10" fill="currentColor">' + ms[j].slice(5) + "/" + ms[j].slice(2, 4) + "</text>";
+      if (!r.total) { g += '<text x="' + cx + '" y="' + (top + ph - 4) + '" text-anchor="middle" font-size="10" fill="currentColor" opacity=".55">—</text>'; return; }
+      var inf = (r.live + r.dead) / r.total, hi = ph * inf / mx, hl = ph * (r.live / r.total) / mx;
+      g += '<rect x="' + (cx - bw - 1) + '" y="' + (top + ph - hi) + '" width="' + bw + '" height="' + hi + '" rx="3" fill="#d97706"/>';
+      g += '<rect x="' + (cx + 1) + '" y="' + (top + ph - hl) + '" width="' + bw + '" height="' + hl + '" rx="3" fill="#dc2626"/>';
+      g += '<text x="' + (cx - bw / 2 - 1) + '" y="' + (top + ph - hi - 4) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor">' + Math.round(inf * 100) + "%</text>";
+    });
+    return '<svg class="trend" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="اتجاه نسبة الإصابة خلال آخر 6 شهور">' + g + "</svg>";
+  }
   /* official printable report: the browser's print dialog saves it as PDF */
   function printReport() {
     if (!repData || !repData.total) { toast("لا توجد فحوصات لهذا الشهر"); return; }
@@ -2707,6 +2904,8 @@ details.steps ol > li { min-width: 0; }
     var td = function (cells) { return "<tr>" + cells.map(function (c) { return "<td>" + c + "</td>"; }).join("") + "</tr>"; };
     var h = '<div class="pr-head">' + (logo ? '<img src="' + logo.src + '" alt="">' : "") + "<div><h1>تقرير الفحص الشهري لنشاط الحشرات</h1><p>المخزن: " + esc(wn) + " · الشهر: " + r.ym.slice(5) + "/" + r.ym.slice(0, 4) + " · تاريخ الإصدار: " + fmtDate(todayISO()) + "</p></div></div>";
     h += '<h2>ملخص الشهر</h2><table class="pr-t">' + th(["عدد الفحوصات", "سليم", "نشاط ميت", "نشاط حي", "نسبة الإصابة (حي + ميت)", "نسبة النشاط الحي"]) + td([r.total, r.clean, r.dead, r.live, pctText(r.live + r.dead, r.total), pctText(r.live, r.total)]) + "</table>";
+    h += "<h2>اتجاه آخر 6 شهور</h2>" + trendSVG(repArchive, r.ym) + "<p>برتقالي: نسبة الإصابة (حي + ميت) · أحمر: النشاط الحي</p>";
+    h += hotHTML(repArchive, true);
     h += '<h2>حسب الجزء</h2><table class="pr-t">' + th(["الجزء", "الفحوصات", "حي", "ميت", "سليم", "نسبة الإصابة"]) + Object.keys(r.parts).map(function (pid) {
       var p = r.parts[pid];
       return td([esc(partName(pid)), p.total, p.live, p.dead, p.clean, pctText(p.live + p.dead, p.total)]);
@@ -2907,6 +3106,7 @@ details.steps ol > li { min-width: 0; }
     else { state.mode = "local"; store = makeLocalStore(whActive); }
     S.bind({ snapshot: function () { return { layout: state.layout, lots: state.lots }; }, store: store });
     store.start(callbacks);
+    if (store.getClimate) store.getClimate(climateFrom()).then(setClimate, function () { /* later */ });
     if (store.getHub) store.getHub().then(function (h) { whList = normalizeHub(h); if (!whList.some(function (w) { return w.id === whActive; })) { switchWh("1"); return; } render(); }, function () { /* names load later */ });
   }
   boot();
