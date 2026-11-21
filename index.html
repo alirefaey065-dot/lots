@@ -334,6 +334,7 @@ textarea { min-height: 84px; resize: vertical; }
   .pr-t th { background: #e9e9e9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .pr-t tr { break-inside: avoid; }
   .pr-lines div { height: 26px; border-bottom: 1px solid #888; }
+  .pr-notes { margin: 0; padding: 8px 10px; border: 1px solid #555; min-height: 60px; }
   .pr-sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 28px; text-align: center; break-inside: avoid; }
   .pr-sign div { padding-top: 6px; border-top: 1px solid #111; margin-top: 34px; }
   .pr-foot { margin-top: 18px; font-size: 10px; text-align: center; }
@@ -351,6 +352,21 @@ textarea { min-height: 84px; resize: vertical; }
 #btn-climate { color: #0891b2; }
 .cl-note { padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); font-size: 14px; font-weight: 600; line-height: 1.6; margin-bottom: 8px; }
 .cl-note[data-tone="bad"] { border-width: 2.5px; border-color: var(--live-line); background: var(--live-bg); color: var(--live-fg); }
+#btn-round { color: #6366f1; }
+.btn[aria-pressed="true"] { border-width: 2.5px; font-weight: 700; }
+.rd-prog { margin: 8px 0 0; font-weight: 700; }
+.rd-pos { margin: 0; font-size: 13px; color: var(--muted); }
+.rd-lot { margin: 4px 0; font-size: 26px; font-weight: 700; line-height: 1.3; }
+.rd-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.rd-btns[hidden] { display: none; }
+.rd-btn { padding: 18px 6px; border-radius: 14px; border: 2.5px solid var(--line); font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+.rd-btn[data-s="clean"] { background: var(--clean-bg); color: var(--clean-fg); border-color: var(--clean-line); }
+.rd-btn[data-s="dead"] { background: var(--dead-bg); color: var(--dead-fg); border-color: var(--dead-line); }
+.rd-btn[data-s="live"] { background: var(--live-bg); color: var(--live-fg); border-color: var(--live-line); }
+#btn-fumlog { color: #e11d48; }
+.fl-list { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; line-height: 1.6; }
+.fl-list li { padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line); }
+.fl-list span { font-weight: 400; }
 .fum[hidden] { display: none; }
 .fum[data-tone="re"] { border-width: 2.5px; }
 .c-fum { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; line-height: 1.25; color: var(--live-fg); }
@@ -461,6 +477,8 @@ details.steps ol > li { min-width: 0; }
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg>
             <span id="export-label">تصدير إكسل</span>
           </button>
+          <button type="button" class="icon-btn" id="btn-fumlog" aria-label="سجل التبخير"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5.5 10a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9V3"/></svg></button>
+          <button type="button" class="icon-btn" id="btn-round" aria-label="جولة الفحص السريعة"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></button>
           <button type="button" class="icon-btn" id="btn-climate" aria-label="الحرارة والرطوبة"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></button>
           <button type="button" class="icon-btn" id="btn-plan" aria-label="خطة الفحص اليوم"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></button>
           <button type="button" class="icon-btn" id="btn-fifo" aria-label="ترتيب الصرف والتنبيهات"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></button>
@@ -523,6 +541,7 @@ details.steps ol > li { min-width: 0; }
         </div>
       </fieldset>
       <div class="fum" id="fum-box" data-tone="fum" hidden></div>
+      <button type="button" class="btn small" id="fum-add" hidden>تسجيل عملية تبخير</button>
       <p class="err" id="lot-err" role="alert" hidden></p>
       <div class="actions two">
         <button type="submit" class="btn primary" id="btn-save">حفظ</button>
@@ -591,6 +610,64 @@ details.steps ol > li { min-width: 0; }
     </div>
   </dialog>
 
+  <dialog id="dlg-fum" class="sheet" aria-labelledby="fm-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="fm-title" tabindex="-1">تسجيل عملية تبخير</h2>
+        <button type="button" class="icon-btn" id="fm-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="hint" id="fm-lot"></p>
+      <div class="field"><label for="fm-d">تاريخ بدء التبخير</label><input id="fm-d" type="date"></div>
+      <div class="field"><label for="fm-mat">المادة / الطريقة</label><input id="fm-mat" type="text" maxlength="60" placeholder="مثال: فوسفين"></div>
+      <div class="field"><label for="fm-dose">الجرعة</label><input id="fm-dose" type="text" maxlength="60" placeholder="كما في إجراءاتكم المعتمدة"></div>
+      <div class="field"><label for="fm-days">مدة التعريض (يوم)</label><input id="fm-days" type="number" inputmode="numeric" min="1" max="60"></div>
+      <div class="field"><label for="fm-who">المسؤول عن التنفيذ</label><input id="fm-who" type="text" maxlength="40"></div>
+      <div class="field"><label for="fm-note">ملاحظات</label><textarea id="fm-note" rows="2" maxlength="300"></textarea></div>
+      <p class="err" id="fm-err" role="alert" hidden></p>
+      <div class="actions"><button type="button" class="btn primary" id="fm-save">حفظ العملية</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-fumlog" class="sheet" aria-labelledby="fl-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="fl-title" tabindex="-1">سجل التبخير</h2>
+        <button type="button" class="icon-btn" id="fl-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <div id="fl-body" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="fl-xl" disabled>تصدير (إكسل)</button>
+        <button type="button" class="btn" id="fl-print" disabled>طباعة / حفظ PDF</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-round" class="sheet" aria-labelledby="rd-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="rd-title" tabindex="-1">جولة الفحص السريعة</h2>
+        <button type="button" class="icon-btn" id="rd-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn small" id="rd-m-late" aria-pressed="true">المتأخر فقط</button>
+        <button type="button" class="btn small" id="rd-m-all" aria-pressed="false">كل اللوطات</button>
+      </div>
+      <p class="rd-prog" id="rd-prog"></p>
+      <div id="rd-card" aria-live="polite"></div>
+      <div class="rd-btns" id="rd-btns">
+        <button type="button" class="rd-btn" data-s="clean">سليم</button>
+        <button type="button" class="rd-btn" data-s="dead">ميت</button>
+        <button type="button" class="rd-btn" data-s="live">حي</button>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="rd-prev">السابق</button>
+        <button type="button" class="btn" id="rd-skip">تخطي</button>
+        <button type="button" class="btn" id="rd-open">فتح اللوط</button>
+      </div>
+      <p class="hint">كل ضغطة تسجّل نتيجة الفحص بتاريخ اليوم وتنتقل للوط التالي. اللوطات تحت التبخير لا تدخل الجولة.</p>
+    </div>
+  </dialog>
+
   <dialog id="dlg-climate" class="sheet" aria-labelledby="cl-title">
     <div class="sheet-in">
       <div class="sheet-head">
@@ -617,6 +694,10 @@ details.steps ol > li { min-width: 0; }
       </div>
       <p class="hint">الأولوية من 0 إلى 100، وتُحسب من: انتهاء التبخير، مدة عدم الفحص، وجود نشاط حي في اللوطات المجاورة، آخر نشاط ميت، وعمر اللوط، والظروف المناخية. اضغط على لوط لفتحه.</p>
       <div id="plan-body" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="plan-wa">إرسال ملخص بالواتساب</button>
+        <button type="button" class="btn" id="plan-copy">نسخ الملخص</button>
+      </div>
     </div>
   </dialog>
 
@@ -652,6 +733,11 @@ details.steps ol > li { min-width: 0; }
         <p class="hint">يُحسب من أرشيف الخلايا حسب تاريخ الفحص. لكل خلية نتيجة واحدة في اليوم.</p>
       </div>
       <div id="rep-body" aria-live="polite"></div>
+      <div class="field">
+        <label for="rep-notes">ملاحظات التقرير</label>
+        <textarea id="rep-notes" rows="4" maxlength="1500" placeholder="اكتب ملاحظاتك والإجراءات التصحيحية هنا"></textarea>
+        <p class="hint">تظهر في الطباعة وفي ملف الإكسل، وتُحفظ على هذا الجهاز لكل شهر.</p>
+      </div>
       <div class="actions">
         <button type="button" class="btn primary" id="rep-xl" disabled>تصدير التقرير (إكسل)</button>
         <button type="button" class="btn" id="rep-print">طباعة / حفظ PDF</button>
@@ -1138,7 +1224,7 @@ details.steps ol > li { min-width: 0; }
         if (key === baseKey) return Promise.reject(new Error("base_warehouse"));
         return getDb().then(function (x) {
           var seq = Promise.resolve();
-          ["lots", "entries", "config", "climate"].forEach(function (name) {
+          ["lots", "entries", "config", "climate", "fumlog"].forEach(function (name) {
             seq = seq.then(function () {
               return getDocsSmart(x, col(x, name)).then(function (sn) {
                 var docs = sn.docs, s2 = Promise.resolve();
@@ -1162,6 +1248,18 @@ details.steps ol > li { min-width: 0; }
       saveClimate: function (r) {
         return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "climate", r.d), { d: r.d, t: r.t, h: r.h, by: r.by || "", at: Date.now() })); });
       },
+      addFum: function (r) {
+        var id = "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "fumlog", id), { lot: r.lot, label: r.label, d: r.d, mat: r.mat, dose: r.dose, days: r.days, who: r.who, note: r.note, by: r.by, at: Date.now() })); });
+      },
+      listFum: function () {
+        return getDb().then(function (x) {
+          return getDocsSmart(x, col(x, "fumlog")).then(function (sn) {
+            return sn.docs.map(function (d) { var v = d.data(); return { id: d.id, lot: String(v.lot || ""), label: String(v.label || ""), d: String(v.d || ""), mat: String(v.mat || ""), dose: String(v.dose || ""), days: +v.days || 0, who: String(v.who || ""), note: String(v.note || ""), by: v.by || "", at: +v.at || 0 }; });
+          });
+        });
+      },
+      deleteFum: function (id) { return getDb().then(function (x) { return settleWrite(x.F.deleteDoc(ref(x, "fumlog", id))); }); },
       getHub: function () {
         return getDb().then(function (x) {
           return x.F.getDoc(x.F.doc(x.db, "warehouses", baseKey || key, "config", "hub")).then(function (sn) { return sn.exists() ? sn.data() : null; });
@@ -2141,9 +2239,32 @@ details.steps ol > li { min-width: 0; }
       clearArchive: function (k) { delete data.archive[k]; persist(); return Promise.resolve(); },
       deleteAll: function () {
         if (!sub || sub === "1") return Promise.reject(new Error("base_warehouse"));
-        try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-climate"); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-climate"); localStorage.removeItem(KEY + "-fumlog"); } catch (e) { /* ignore */ }
         data = { layout: null, lots: {}, archive: {} };
         return Promise.resolve();
+      },
+      addFum: function (r) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-fumlog") || "{}"), id = "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+          r.at = Date.now();
+          m[id] = r;
+          localStorage.setItem(KEY + "-fumlog", JSON.stringify(m));
+          return Promise.resolve();
+        } catch (e) { return Promise.reject(e); }
+      },
+      listFum: function () {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-fumlog") || "{}");
+          return Promise.resolve(Object.keys(m).map(function (id) { var v = m[id] || {}; return { id: id, lot: String(v.lot || ""), label: String(v.label || ""), d: String(v.d || ""), mat: String(v.mat || ""), dose: String(v.dose || ""), days: +v.days || 0, who: String(v.who || ""), note: String(v.note || ""), by: v.by || "", at: +v.at || 0 }; }));
+        } catch (e) { return Promise.resolve([]); }
+      },
+      deleteFum: function (id) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-fumlog") || "{}");
+          delete m[id];
+          localStorage.setItem(KEY + "-fumlog", JSON.stringify(m));
+          return Promise.resolve();
+        } catch (e) { return Promise.reject(e); }
       },
       getClimate: function (from) {
         try {
@@ -2526,6 +2647,200 @@ details.steps ol > li { min-width: 0; }
     }).then(function () { setExportBusy(false); });
   }
 
+  /* ---------- fumigation record ---------- */
+  var flList = [], flBusy = false;
+  function cleanTxt(v, n) { return String(v || "").replace(/\s+/g, " ").trim().slice(0, n); }
+  function loadFumLog() {
+    return store.listFum().then(function (list) {
+      flList = list.filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.d) && r.days > 0; }).sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : b.at - a.at; });
+    });
+  }
+  function paintFumLog() {
+    var box = $("fl-body"), can = state.canWrite !== false && !!store.deleteFum;
+    $("fl-xl").disabled = !flList.length;
+    $("fl-print").disabled = !flList.length;
+    if (!flList.length) { box.innerHTML = '<p class="fine">لا توجد عمليات تبخير مسجّلة. سجّل أول عملية من شاشة أي لوط حي.</p>'; return; }
+    box.innerHTML = '<ul class="fl-list">' + flList.map(function (r) {
+      var k = parseKey(r.lot);
+      return "<li><b>" + fmtDate(r.d) + " · " + esc(r.label || "بدون اسم") + "</b> · " + esc(partName(k ? k.pid : "")) + (k ? " · صف " + k.r + " · عمود " + k.c : "") + "<br><span>" + esc(r.mat) + (r.dose ? " · الجرعة: " + esc(r.dose) : "") + " · التعريض: " + daysText(r.days) + " · حتى " + fmtDate(addDaysISO(r.d, r.days)) + (r.who ? " · المسؤول: " + esc(r.who) : "") + (r.note ? "<br>" + esc(r.note) : "") + "</span>" + (can ? ' <button type="button" class="btn small danger" data-del="' + esc(r.id) + '">حذف</button>' : "") + "</li>";
+    }).join("") + "</ul>";
+  }
+  $("btn-fumlog").addEventListener("click", function () {
+    if (!store || !store.listFum) { toast("سجل التبخير غير متاح في هذا الوضع."); return; }
+    flList = [];
+    paintFumLog();
+    openDlg($("dlg-fumlog"));
+    loadFumLog().then(paintFumLog, function () { $("fl-body").innerHTML = '<p class="fine">تعذّر تحميل السجل.</p>'; });
+  });
+  $("fl-body").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button[data-del]") : null;
+    if (!b) return;
+    if (b.getAttribute("data-armed") !== "1") { arm(b, "اضغط مرة أخرى", "حذف"); return; }
+    clearTimeout(b._t);
+    b.disabled = true;
+    store.deleteFum(b.getAttribute("data-del")).then(loadFumLog).then(paintFumLog, function (ex) { toast(writeError(ex)); paintFumLog(); });
+  });
+  $("fum-add").addEventListener("click", function () {
+    if (!editing) return;
+    var k = parseKey(editing.key), lab = cleanTxt($("f-label").value, 24);
+    $("fm-lot").textContent = (lab || "بدون اسم") + (k ? " — " + partName(k.pid) + " · صف " + k.r + " · عمود " + k.c : "");
+    $("fm-d").value = todayISO();
+    $("fm-days").value = FUM_DAYS;
+    $("fm-who").value = state.myId || "";
+    $("fm-mat").value = "";
+    $("fm-dose").value = "";
+    $("fm-note").value = "";
+    hideErr($("fm-err"));
+    openDlg($("dlg-fum"));
+  });
+  $("fm-save").addEventListener("click", function () {
+    var d = $("fm-d").value, mat = cleanTxt($("fm-mat").value, 60), days = parseInt($("fm-days").value, 10), btn = $("fm-save");
+    hideErr($("fm-err"));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || parseISO(d) === null || d > todayISO()) { showErr($("fm-err"), "اختر تاريخًا صحيحًا لا يكون في المستقبل."); return; }
+    if (!mat) { showErr($("fm-err"), "اكتب المادة أو الطريقة."); return; }
+    if (!(days >= 1 && days <= 60)) { showErr($("fm-err"), "مدة التعريض بين 1 و60 يومًا."); return; }
+    if (!editing || flBusy) return;
+    var rec = { lot: editing.key, label: cleanTxt($("f-label").value, 24), d: d, mat: mat, dose: cleanTxt($("fm-dose").value, 60), days: days, who: cleanTxt($("fm-who").value, 40), note: cleanTxt($("fm-note").value, 300), by: state.myId || "" };
+    flBusy = true;
+    btn.disabled = true;
+    store.addFum(rec).then(function () { closeDlg($("dlg-fum")); toast("تم تسجيل عملية التبخير"); }, function (ex) { showErr($("fm-err"), writeError(ex)); }).then(function () { flBusy = false; btn.disabled = false; });
+  });
+  $("fm-close").addEventListener("click", function () { closeDlg($("dlg-fum")); });
+  $("fl-close").addEventListener("click", function () { closeDlg($("dlg-fumlog")); });
+  function exportFumLog() {
+    if (!flList.length || flBusy || !downloadsCap) return;
+    var btn = $("fl-xl");
+    flBusy = true;
+    btn.disabled = true;
+    loadExcelJS().then(function (X) {
+      var wb = new X.Workbook();
+      wb.creator = "نظام الجودة";
+      wb.created = new Date();
+      var ws = wb.addWorksheet("سجل التبخير", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
+      var heads = [["تاريخ البدء", 14], ["اللوط", 18], ["الجزء", 14], ["الصف", 8], ["العمود", 8], ["المادة / الطريقة", 22], ["الجرعة", 18], ["مدة التعريض (يوم)", 16], ["نهاية التعريض", 14], ["المسؤول", 16], ["ملاحظات", 36]];
+      heads.forEach(function (h, i) { ws.getColumn(i + 1).width = h[1]; xlHead(ws.getCell(1, i + 1), h[0]); });
+      ws.getRow(1).height = 30;
+      flList.forEach(function (r, ri) {
+        var k = parseKey(r.lot), n = ri + 2;
+        var vals = [xlDate(r.d), r.label, partName(k ? k.pid : ""), k ? k.r : "", k ? k.c : "", r.mat, r.dose, r.days, xlDate(addDaysISO(r.d, r.days)), r.who, r.note];
+        vals.forEach(function (v, i) { var c = ws.getCell(n, i + 1); c.value = v === "" ? null : v; xlBody(c, i === 10, i === 10); });
+        ws.getCell(n, 1).numFmt = "dd/mm/yyyy";
+        ws.getCell(n, 9).numFmt = "dd/mm/yyyy";
+      });
+      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: heads.length } };
+      return wb.xlsx.writeBuffer();
+    }).then(function (buf) {
+      return downloadsCap.save({ filename: "fumigation-log-" + (whActive === "1" ? "" : whActive + "-") + todayISO() + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
+    }).then(function () {
+      toast("تم حفظ ملف الإكسل");
+    }, function (ex) {
+      if (ex && ex.code === "declined") return;
+      toast(ex && ex.message === "exceljs_load" ? "تعذّر تحميل مكتبة الإكسل. تحقق من الاتصال وحاول مرة أخرى." : "تعذّر تجهيز الملف. حاول مرة أخرى.");
+    }).then(function () { flBusy = false; btn.disabled = !flList.length; });
+  }
+  function printFumLog() {
+    if (!flList.length) return;
+    var logo = document.querySelector(".brand img"), wn = whNameOf(whActive) || state.layout.name || "المخزن";
+    var h = '<div class="pr-head">' + (logo ? '<img src="' + logo.src + '" alt="">' : "") + "<div><h1>سجل عمليات التبخير</h1><p>المخزن: " + esc(wn) + " · تاريخ الإصدار: " + fmtDate(todayISO()) + "</p></div></div>";
+    h += '<table class="pr-t"><tr><th>التاريخ</th><th>اللوط</th><th>الموقع</th><th>المادة</th><th>الجرعة</th><th>التعريض</th><th>المسؤول</th><th>ملاحظات</th></tr>' + flList.slice(0, 300).map(function (r) {
+      var k = parseKey(r.lot);
+      return "<tr><td>" + fmtDate(r.d) + "</td><td>" + esc(r.label || "بدون اسم") + "</td><td>" + esc(partName(k ? k.pid : "")) + (k ? " ص" + k.r + " ع" + k.c : "") + "</td><td>" + esc(r.mat) + "</td><td>" + esc(r.dose) + "</td><td>" + daysText(r.days) + "</td><td>" + esc(r.who) + "</td><td>" + esc(r.note) + "</td></tr>";
+    }).join("") + "</table>";
+    h += '<div class="pr-sign"><div>معدّ السجل' + (state.myId ? ": " + esc(state.myId) : "") + "</div><div>مسؤول الجودة</div><div>مدير المصنع</div></div>";
+    $("print-area").innerHTML = h;
+    window.print();
+  }
+  $("fl-xl").addEventListener("click", exportFumLog);
+  $("fl-print").addEventListener("click", printFumLog);
+
+  /* ---------- quick inspection round ---------- */
+  var rd = { list: [], i: 0, done: { clean: 0, dead: 0, live: 0 }, skip: 0, busy: false };
+  function roundList(late) {
+    var td = todayISO(), out = [];
+    state.layout.parts.forEach(function (p) {
+      for (var r = 1; r <= p.rows; r++) for (var c = 1; c <= state.layout.cols; c++) {
+        var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l), fu = st === "live" ? fumInfo(l, td) : null;
+        if (st === "empty" || (fu && !fu.re)) continue;
+        if (late && lateDays(l, td) === null) continue;
+        out.push({ key: key, pid: p.id, r: r, c: c });
+      }
+    });
+    return out;
+  }
+  function paintRound() {
+    var box = $("rd-card"), it = rd.list[rd.i], over = rd.i >= rd.list.length;
+    $("rd-prog").textContent = rd.list.length ? Math.min(rd.i + 1, rd.list.length) + " / " + rd.list.length : "";
+    $("rd-btns").hidden = over;
+    if (!rd.list.length) { box.innerHTML = '<p class="fine">لا توجد لوطات مطلوب فحصها بهذا الاختيار.</p>'; return; }
+    if (over) { box.innerHTML = "<p><b>خلصت الجولة.</b></p><p>سليم " + rd.done.clean + " · ميت " + rd.done.dead + " · حي " + rd.done.live + " · متخطى " + rd.skip + "</p>"; return; }
+    var l = state.lots.get(it.key) || {};
+    box.innerHTML = '<p class="rd-pos">' + esc(partName(it.pid)) + " · صف " + it.r + " · عمود " + it.c + '</p><p class="rd-lot">' + esc(l.label || "بدون اسم") + '</p><p class="fine">' + (l.produced ? "إنتاج " + fmtDate(l.produced) + " · " : "") + (l.inspected ? "آخر فحص " + fmtDate(l.inspected) : "لم يُفحص") + " · " + WORD[lotState(l)] + "</p>";
+  }
+  function startRound(late) {
+    rd.list = roundList(late); rd.i = 0; rd.done = { clean: 0, dead: 0, live: 0 }; rd.skip = 0; rd.busy = false;
+    $("rd-m-late").setAttribute("aria-pressed", late ? "true" : "false");
+    $("rd-m-all").setAttribute("aria-pressed", late ? "false" : "true");
+    paintRound();
+  }
+  function roundSet(status) {
+    var it = rd.list[rd.i];
+    if (!it || rd.busy || state.canWrite === false) return;
+    var prev = state.lots.get(it.key) || {}, src = { label: prev.label || "", produced: prev.produced || "", status: status, inspected: todayISO(), notes: prev.notes || "" };
+    var err = validateLot(src);
+    if (err) { toast(err); return; }
+    var doc = {};
+    ["label", "produced", "status", "inspected", "notes"].forEach(function (f) { if (src[f]) doc[f] = src[f]; });
+    var nd = normalizeLot(doc);
+    rd.busy = true;
+    store.saveLot(it.key, doc).then(function () { return store.appendArchive(it.key, makeEntry("save", nd, state.myId)); }).then(function () {
+      rd.done[status]++; rd.i++; rd.busy = false; paintRound();
+    }, function (ex) { rd.busy = false; toast(writeError(ex)); });
+  }
+  $("btn-round").addEventListener("click", function () {
+    if (state.loading || !store) { toast("انتظر تحميل البيانات"); return; }
+    if (state.canWrite === false) { toast("وضع العرض فقط: لا يمكن تسجيل فحوصات."); return; }
+    startRound(roundList(true).length > 0);
+    openDlg($("dlg-round"));
+  });
+  $("rd-btns").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button[data-s]") : null;
+    if (b) roundSet(b.getAttribute("data-s"));
+  });
+  $("rd-skip").addEventListener("click", function () { if (rd.i < rd.list.length) { rd.skip++; rd.i++; paintRound(); } });
+  $("rd-prev").addEventListener("click", function () { if (rd.i > 0) { rd.i--; paintRound(); } });
+  $("rd-open").addEventListener("click", function () { var it = rd.list[rd.i]; if (!it) return; closeDlg($("dlg-round")); openLot(it.key); });
+  $("rd-m-late").addEventListener("click", function () { startRound(true); });
+  $("rd-m-all").addEventListener("click", function () { startRound(false); });
+  $("rd-close").addEventListener("click", function () { closeDlg($("dlg-round")); });
+
+  /* ---------- WhatsApp summary ---------- */
+  function waMessage() {
+    var td = todayISO(), live = [], re = [], late = [];
+    state.layout.parts.forEach(function (p) {
+      for (var r = 1; r <= p.rows; r++) for (var c = 1; c <= state.layout.cols; c++) {
+        var l = state.lots.get(lotKey(p.id, r, c)), st = lotState(l);
+        if (st === "empty") continue;
+        var pos = (l.label || "بدون اسم") + " — " + partName(p.id) + " صف " + r + " عمود " + c, fu = st === "live" ? fumInfo(l, td) : null;
+        if (fu && fu.re) re.push(pos + (fu.late > 0 ? " (متأخر " + daysText(fu.late) + ")" : ""));
+        else if (fu) live.push(pos + " (باقي " + daysText(fu.left) + ")");
+        else if (st === "live") live.push(pos);
+        if (!(fu && fu.re) && lateDays(l, td) !== null) late.push(pos);
+      }
+    });
+    var sec = function (title, arr) {
+      return arr.length ? "\n" + title + " (" + arr.length + "):\n" + arr.slice(0, 10).map(function (x) { return "• " + x; }).join("\n") + (arr.length > 10 ? "\nو" + (arr.length - 10) + " آخرين" : "") + "\n" : "";
+    };
+    var m = "📋 " + (whNameOf(whActive) || state.layout.name || "المخزن") + " — " + fmtDate(td) + "\n";
+    m += sec("⚠️ نشاط حي تحت التبخير", live) + sec("🔁 مطلوب إعادة فحص", re) + sec("⏰ فحص متأخر", late);
+    if (!live.length && !re.length && !late.length) m += "\n✅ لا توجد لوطات تحتاج متابعة الآن.";
+    return m.trim();
+  }
+  $("plan-wa").addEventListener("click", function () { window.open("https://wa.me/?text=" + encodeURIComponent(waMessage()), "_blank"); });
+  $("plan-copy").addEventListener("click", function () {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(waMessage()).then(function () { toast("تم نسخ الملخص"); }, function () { toast("تعذّر النسخ."); });
+    else toast("النسخ غير مدعوم في هذا المتصفح.");
+  });
+
   /* ---------- temperature and humidity log ---------- */
   var CLIMATE_T = 25, CLIMATE_H = 70, climateList = [];
   function climateFrom() { return addDaysISO(todayISO(), -90); }
@@ -2823,6 +3138,15 @@ details.steps ol > li { min-width: 0; }
         put(ws, 10 + i, [partName(pid), p.total, p.live, p.dead, p.clean, (p.live + p.dead) / p.total]);
         ws.getCell(10 + i, 6).numFmt = "0.0%";
       });
+      var ntx = ($("rep-notes").value || "").trim();
+      if (ntx) {
+        var nr = 11 + Object.keys(r.parts).length, nc = ws.getCell(nr + 1, 1);
+        put(ws, nr, ["ملاحظات وإجراءات تصحيحية"], true);
+        nc.value = ntx;
+        xlBody(nc, true, true);
+        ws.mergeCells(nr + 1, 1, nr + 1, 6);
+        ws.getRow(nr + 1).height = Math.max(30, 15 * (ntx.split("\n").length + Math.floor(ntx.length / 70)));
+      }
       var w2 = wb.addWorksheet("فحوصات الشهر", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
       var heads = [["تاريخ الفحص", 15], ["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم اللوط", 18], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["ملاحظات", 40], ["بواسطة", 16]];
       heads.forEach(function (h, i) { w2.getColumn(i + 1).width = h[1]; xlHead(w2.getCell(1, i + 1), h[0]); });
@@ -2896,6 +3220,18 @@ details.steps ol > li { min-width: 0; }
     });
     return '<svg class="trend" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="اتجاه نسبة الإصابة خلال آخر 6 شهور">' + g + "</svg>";
   }
+  function repNotesKey() { return "lots-rep-notes-" + whActive + "-" + $("rep-month").value; }
+  function loadRepNotes() {
+    var v = "";
+    try { v = localStorage.getItem(repNotesKey()) || ""; } catch (e) { /* none */ }
+    $("rep-notes").value = v;
+  }
+  $("rep-notes").addEventListener("input", function () {
+    try {
+      var v = $("rep-notes").value;
+      if (v.trim()) localStorage.setItem(repNotesKey(), v); else localStorage.removeItem(repNotesKey());
+    } catch (e) { /* not saved */ }
+  });
   /* official printable report: the browser's print dialog saves it as PDF */
   function printReport() {
     if (!repData || !repData.total) { toast("لا توجد فحوصات لهذا الشهر"); return; }
@@ -2917,7 +3253,8 @@ details.steps ol > li { min-width: 0; }
         return td([i + 1, esc(it.en.l || "بدون اسم"), esc(partName(k ? k.pid : "")), k ? k.r : "", k ? k.c : "", fmtDate(it.en.i), esc(it.en.n)]);
       }).join("") + "</table>";
     } else h += "<p>لا توجد لوطات بنشاط حي في هذا الشهر.</p>";
-    h += '<h2>ملاحظات وإجراءات تصحيحية</h2><div class="pr-lines"><div></div><div></div><div></div><div></div></div>';
+    var nt = ($("rep-notes").value || "").trim();
+    h += "<h2>ملاحظات وإجراءات تصحيحية</h2>" + (nt ? '<p class="pr-notes">' + esc(nt).replace(/\n/g, "<br>") + "</p>" : '<div class="pr-lines"><div></div><div></div><div></div><div></div></div>');
     h += '<div class="pr-sign"><div>معدّ التقرير' + (state.myId ? ": " + esc(state.myId) : "") + "</div><div>مسؤول الجودة</div><div>مدير المصنع</div></div>";
     h += '<p class="pr-foot">أُعدّ من نظام فحص المخزون · ' + fmtDate(todayISO()) + "</p>";
     $("print-area").innerHTML = h;
@@ -2927,6 +3264,7 @@ details.steps ol > li { min-width: 0; }
   $("btn-report").addEventListener("click", function () {
     if (state.loading || !store) { toast("انتظر تحميل البيانات"); return; }
     if (!$("rep-month").value) $("rep-month").value = todayISO().slice(0, 7);
+    loadRepNotes();
     repArchive = null;
     $("rep-xl").disabled = true;
     $("rep-body").innerHTML = '<p class="fine">جارٍ التحميل…</p>';
@@ -2935,7 +3273,7 @@ details.steps ol > li { min-width: 0; }
       $("rep-body").innerHTML = '<p class="fine">تعذّر تحميل البيانات. حاول مرة أخرى.</p>';
     });
   });
-  $("rep-month").addEventListener("input", paintReport);
+  $("rep-month").addEventListener("input", function () { loadRepNotes(); paintReport(); });
   $("rep-xl").addEventListener("click", exportMonthReport);
   $("rep-close").addEventListener("click", function () { closeDlg($("dlg-rep")); });
 
@@ -2947,6 +3285,7 @@ details.steps ol > li { min-width: 0; }
   function paintFum() {
     var box = $("fum-box"), fu = checkedStatus() === "live" ? fumInfo({ status: "live", inspected: $("f-inspected").value || todayISO() }, todayISO()) : null;
     box.hidden = !fu;
+    $("fum-add").hidden = !(checkedStatus() === "live" && !!editing && state.canWrite !== false && !!store && !!store.addFum);
     if (fu) { box.setAttribute("data-tone", fu.re ? "re" : "fum"); box.textContent = fumText(fu); }
   }
   $("f-inspected").addEventListener("input", paintFum);
