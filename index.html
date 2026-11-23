@@ -620,7 +620,7 @@ details.steps ol > li { min-width: 0; }
         <h2 id="cp-title" tabindex="-1">الإجراءات التصحيحية</h2>
         <button type="button" class="icon-btn" id="cp-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
-      <p class="hint">كل مرص بنشاط حي هو انحراف عن الحد الحرج، ومطلوب له إجراء تصحيحي مسجّل ومسؤول وموعد إغلاق.</p>
+      <p class="hint">كل مرص بنشاط حي هو انحراف عن الحد الحرج، ومطلوب له إجراء تصحيحي مسجّل ومسؤول، وموعد الإغلاق إجباري بعد 5 أيام من بدء الإجراء.</p>
       <div id="cp-body" aria-live="polite"></div>
       <div class="sg-box" id="sg-cp"></div>
       <div class="actions">
@@ -656,7 +656,7 @@ details.steps ol > li { min-width: 0; }
       <div class="field"><label for="cf-dd">تاريخ الانحراف (الفحص)</label><input id="cf-dd" type="date"></div>
       <div class="field"><label for="cf-act">الإجراء التصحيحي</label><textarea id="cf-act" rows="3" maxlength="400" placeholder="مثال: عزل المرص وتبخيره وإعادة الفحص بعد انتهاء التعريض"></textarea></div>
       <div class="field"><label for="cf-who">المسؤول عن التنفيذ</label><input id="cf-who" type="text" maxlength="40"></div>
-      <div class="field"><label for="cf-due">الموعد النهائي للإغلاق</label><input id="cf-due" type="date"></div>
+      <div class="field"><label for="cf-due">موعد الإغلاق الإجباري (5 أيام من بدء الإجراء)</label><input id="cf-due" type="date"></div>
       <p class="err" id="cf-err" role="alert" hidden></p>
       <div class="actions"><button type="button" class="btn primary" id="cf-save">حفظ الإجراء</button></div>
     </div>
@@ -1970,6 +1970,23 @@ details.steps ol > li { min-width: 0; }
     if (fu.re) return "انتهت مدة التبخير (" + fmtDate(fu.until) + "). " + (fu.late > 0 ? "متأخر " + daysText(fu.late) + ". " : "") + "أعد فحص المرص وسجّل حالته الفعلية.";
     return "تحت التبخير، باقي " + daysText(fu.left) + " (ينتهي " + fmtDate(fu.until) + ").";
   }
+  var CAPA_DAYS = 5;
+  /* a live مرص with a recorded fumigation still running: its insect-activity status is locked until the full period ends */
+  function fumLock(key, l, td) {
+    if (!l || l.status !== "live" || !l.inspected) return null;
+    var fz = (flList || []).filter(function (f) { return f.lot === key && f.d >= l.inspected; }).sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; })[0];
+    var end = fz ? addDaysISO(fz.d, fz.days) : "";
+    return end && end > td ? { until: end } : null;
+  }
+  function fumGuard(key, prev, nd) {
+    var pre = store && store.listFum ? loadFumLog().then(null, function () { /* use last loaded list */ }) : Promise.resolve();
+    return pre.then(function () {
+      var k = prev ? fumLock(key, prev, todayISO()) : null;
+      if (!k) return "";
+      var changed = (nd ? nd.status || "" : "") !== (prev.status || "") || (nd ? nd.inspected || "" : "") !== (prev.inspected || "");
+      return changed ? "المرص تحت التبخير حتى " + fmtDate(k.until) + ". لا يمكن تغيير حالة النشاط الحشري قبل تمام مدة التبخير." : "";
+    });
+  }
   var WH_KEY = "lots-active-wh", whActive = "1", whList = null;
   try { var wv0 = localStorage.getItem(WH_KEY); if (wv0 && /^[a-z0-9]{1,12}$/.test(wv0)) whActive = wv0; } catch (e) { /* default */ }
   function normalizeHub(h) {
@@ -2719,7 +2736,7 @@ details.steps ol > li { min-width: 0; }
     var entry = makeEntry("save", nd, state.myId);
     hideErr($("lot-err"));
     setSaving(true);
-    store.saveLot(key, doc).then(function () {
+    fumGuard(key, prev, nd).then(function (m) { if (m) throw { fumMsg: m }; return store.saveLot(key, doc); }).then(function () {
       return store.appendArchive(key, entry).then(
         function () { closeDlg(dlgLot); savedToast(nd); },
         function () {
@@ -2729,7 +2746,7 @@ details.steps ol > li { min-width: 0; }
           showErr($("lot-err"), "تم حفظ المرص، لكن تعذّر تسجيله في الأرشيف. تحقق من الاتصال واضغط حفظ لإعادة المحاولة.");
         }
       );
-    }, function (ex) { showErr($("lot-err"), writeError(ex)); }).then(function () { setSaving(false); });
+    }, function (ex) { showErr($("lot-err"), ex && ex.fumMsg ? ex.fumMsg : writeError(ex)); }).then(function () { setSaving(false); });
   });
   btnClear.addEventListener("click", function () {
     if (!editing || saving) return;
@@ -2738,9 +2755,9 @@ details.steps ol > li { min-width: 0; }
     var key = editing.key, prev = state.lots.get(key) || null;
     hideErr($("lot-err"));
     setSaving(true);
-    store.appendArchive(key, makeEntry("clear", prev, state.myId)).then(function () { return store.deleteLot(key); }).then(
+    fumGuard(key, prev, null).then(function (m) { if (m) throw { fumMsg: m }; return store.appendArchive(key, makeEntry("clear", prev, state.myId)); }).then(function () { return store.deleteLot(key); }).then(
       function () { closeDlg(dlgLot); toast("تم تفريغ الخلية"); },
-      function (ex) { showErr($("lot-err"), writeError(ex)); }
+      function (ex) { showErr($("lot-err"), ex && ex.fumMsg ? ex.fumMsg : writeError(ex)); }
     ).then(function () { setSaving(false); disarm(btnClear, "تفريغ الخلية"); });
   });
 
@@ -2939,7 +2956,7 @@ details.steps ol > li { min-width: 0; }
     h += '<h3 class="rep-h">إجراءات مفتوحة (' + open.length + ")</h3>";
     h += open.length ? '<ul class="fl-list">' + open.map(function (r) {
       var late = r.due && r.due < td;
-      return "<li" + (late ? ' style="border-width:2.5px"' : "") + "><b>" + esc(r.label || "بدون اسم") + "</b> · " + esc(capaPos(r.lot)) + "<br><span>" + esc(r.dev) + " · " + fmtDate(r.dd) + "<br>الإجراء: " + esc(r.action) + (r.who ? " · المسؤول: " + esc(r.who) : "") + (r.due ? " · الموعد: " + fmtDate(r.due) : "") + (late ? " · <b>متأخر</b>" : "") + "</span>" +
+      return "<li" + (late ? ' style="border-width:2.5px"' : "") + "><b>" + esc(r.label || "بدون اسم") + "</b> · " + esc(capaPos(r.lot)) + "<br><span>" + esc(r.dev) + " · " + fmtDate(r.dd) + "<br>الإجراء: " + esc(r.action) + (r.who ? " · المسؤول: " + esc(r.who) : "") + (r.due ? " · الموعد: " + fmtDate(r.due) + (!late ? (r.due === td ? " · ينتهي اليوم" : " (باقي " + daysText(daysBetween(td, r.due)) + ")") : "") : "") + (late ? " · <b>متأخر</b>" : "") + "</span>" +
         (can ? ' <button type="button" class="btn small primary" data-cp-done="' + esc(r.id) + '">تم الإغلاق</button> <button type="button" class="btn small danger" data-cp-del="' + esc(r.id) + '">حذف</button>' : "") + "</li>";
     }).join("") + "</ul>" : '<p class="fine">لا توجد إجراءات مفتوحة.</p>';
     h += '<h3 class="rep-h">محجوز بانتظار قرار الإفراج (' + wait.length + ")</h3>";
@@ -2963,7 +2980,7 @@ details.steps ol > li { min-width: 0; }
     $("cf-dd").value = dd || l.inspected || todayISO();
     $("cf-act").value = "";
     $("cf-who").value = state.myId || "";
-    $("cf-due").value = addDaysISO(todayISO(), 3);
+    $("cf-due").value = addDaysISO(todayISO(), CAPA_DAYS); $("cf-due").disabled = true;
     hideErr($("cf-err"));
     openDlg($("dlg-capa-form"));
   }
@@ -2995,7 +3012,7 @@ details.steps ol > li { min-width: 0; }
     }
   });
   $("cf-save").addEventListener("click", function () {
-    var dd = $("cf-dd").value, due = $("cf-due").value, act = cleanTxt($("cf-act").value, 400), btn = $("cf-save");
+    var dd = $("cf-dd").value, due = addDaysISO(todayISO(), CAPA_DAYS), act = cleanTxt($("cf-act").value, 400), btn = $("cf-save");
     hideErr($("cf-err"));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dd) || parseISO(dd) === null || dd > todayISO()) { showErr($("cf-err"), "اختر تاريخ انحراف صحيح لا يكون في المستقبل."); return; }
     if (!act) { showErr($("cf-err"), "اكتب الإجراء التصحيحي."); return; }
@@ -3208,7 +3225,7 @@ details.steps ol > li { min-width: 0; }
     state.layout.parts.forEach(function (p) {
       for (var r = 1; r <= p.rows; r++) for (var c = 1; c <= state.layout.cols; c++) {
         var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l), fu = st === "live" ? fumInfo(l, td) : null;
-        if (st === "empty" || (fu && !fu.re)) continue;
+        if (st === "empty" || (fu && !fu.re) || (st === "live" && fumLock(key, l, td))) continue;
         if (late && lateDays(l, td) === null) continue;
         out.push({ key: key, pid: p.id, r: r, c: c });
       }
@@ -3240,9 +3257,9 @@ details.steps ol > li { min-width: 0; }
     ["label", "produced", "status", "inspected", "notes"].forEach(function (f) { if (src[f]) doc[f] = src[f]; });
     var nd = normalizeLot(doc);
     rd.busy = true;
-    store.saveLot(it.key, doc).then(function () { return store.appendArchive(it.key, makeEntry("save", nd, state.myId)); }).then(function () {
+    fumGuard(it.key, prev, nd).then(function (m) { if (m) throw { fumMsg: m }; return store.saveLot(it.key, doc); }).then(function () { return store.appendArchive(it.key, makeEntry("save", nd, state.myId)); }).then(function () {
       rd.done[status]++; rd.i++; rd.busy = false; paintRound();
-    }, function (ex) { rd.busy = false; toast(writeError(ex)); });
+    }, function (ex) { rd.busy = false; if (ex && ex.fumMsg) { toast(ex.fumMsg); rd.skip++; rd.i++; paintRound(); } else toast(writeError(ex)); });
   }
   $("btn-round").addEventListener("click", function () {
     if (state.loading || !store) { toast("انتظر تحميل البيانات"); return; }
