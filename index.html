@@ -368,6 +368,7 @@ textarea { min-height: 84px; resize: vertical; }
 .fl-list { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; line-height: 1.6; }
 .fl-list li { padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line); }
 .fl-list span { font-weight: 400; }
+#btn-capa { color: #f97316; }
 .fum[hidden] { display: none; }
 .fum[data-tone="re"] { border-width: 2.5px; }
 .c-fum { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; line-height: 1.25; color: var(--live-fg); }
@@ -461,9 +462,6 @@ details.steps ol { margin: 0; padding: 0 22px 14px 0; display: grid; grid-templa
 details.steps ol > li { min-width: 0; }
 .chk { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; }
 .chk input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; }
-.sg-sum { display: grid; gap: 4px; padding: 12px 14px; border: 1.5px dashed var(--line); border-radius: 12px; background: var(--sunken); }
-.sg-sum p { margin: 0; font-size: 13.5px; line-height: 1.7; }
-.sg-sum .btn { justify-self: start; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -481,6 +479,7 @@ details.steps ol > li { min-width: 0; }
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg>
             <span id="export-label">تصدير إكسل</span>
           </button>
+          <button type="button" class="icon-btn" id="btn-capa" aria-label="الإجراءات التصحيحية"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M8 6H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"/><path d="M9 14l2 2 4-4"/></svg></button>
           <button type="button" class="icon-btn" id="btn-fumlog" aria-label="سجل التبخير"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5.5 10a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9V3"/></svg></button>
           <button type="button" class="icon-btn" id="btn-round" aria-label="جولة الفحص السريعة"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></button>
           <button type="button" class="icon-btn" id="btn-climate" aria-label="الحرارة والرطوبة"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></button>
@@ -546,6 +545,7 @@ details.steps ol > li { min-width: 0; }
       </fieldset>
       <div class="fum" id="fum-box" data-tone="fum" hidden></div>
       <button type="button" class="btn small" id="fum-add" hidden>تسجيل عملية تبخير</button>
+      <button type="button" class="btn small" id="capa-add" hidden>تسجيل إجراء تصحيحي</button>
       <p class="err" id="lot-err" role="alert" hidden></p>
       <div class="actions two">
         <button type="submit" class="btn primary" id="btn-save">حفظ</button>
@@ -614,6 +614,54 @@ details.steps ol > li { min-width: 0; }
     </div>
   </dialog>
 
+  <dialog id="dlg-capa" class="sheet" aria-labelledby="cp-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="cp-title" tabindex="-1">الإجراءات التصحيحية</h2>
+        <button type="button" class="icon-btn" id="cp-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="hint">كل مرص بنشاط حي هو انحراف عن الحد الحرج، ومطلوب له إجراء تصحيحي مسجّل ومسؤول وموعد إغلاق.</p>
+      <div id="cp-body" aria-live="polite"></div>
+      <div class="sg-box" id="sg-cp"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="cp-xl" disabled>تصدير (إكسل)</button>
+        <button type="button" class="btn" id="cp-print" disabled>طباعة / حفظ PDF</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-rel" class="sheet" aria-labelledby="rl-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="rl-title" tabindex="-1">قرار الإفراج</h2>
+        <button type="button" class="icon-btn" id="rl-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="hint" id="rl-lot"></p>
+      <div id="rl-check"></div>
+      <div class="field"><label for="rl-by">المعتمِد للإفراج</label><input id="rl-by" type="text" maxlength="40"></div>
+      <div class="field"><label for="rl-note">ملاحظة أو شروط الإفراج</label><textarea id="rl-note" rows="2" maxlength="300"></textarea></div>
+      <p class="err" id="rl-err" role="alert" hidden></p>
+      <div class="actions"><button type="button" class="btn primary" id="rl-save">اعتماد الإفراج</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-capa-form" class="sheet" aria-labelledby="cf-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="cf-title" tabindex="-1">تسجيل إجراء تصحيحي</h2>
+        <button type="button" class="icon-btn" id="cf-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="hint" id="cf-lot"></p>
+      <div class="field"><label for="cf-dev">الانحراف</label><input id="cf-dev" type="text" maxlength="80"></div>
+      <div class="field"><label for="cf-dd">تاريخ الانحراف (الفحص)</label><input id="cf-dd" type="date"></div>
+      <div class="field"><label for="cf-act">الإجراء التصحيحي</label><textarea id="cf-act" rows="3" maxlength="400" placeholder="مثال: عزل المرص وتبخيره وإعادة الفحص بعد انتهاء التعريض"></textarea></div>
+      <div class="field"><label for="cf-who">المسؤول عن التنفيذ</label><input id="cf-who" type="text" maxlength="40"></div>
+      <div class="field"><label for="cf-due">الموعد النهائي للإغلاق</label><input id="cf-due" type="date"></div>
+      <p class="err" id="cf-err" role="alert" hidden></p>
+      <div class="actions"><button type="button" class="btn primary" id="cf-save">حفظ الإجراء</button></div>
+    </div>
+  </dialog>
+
   <dialog id="dlg-fum" class="sheet" aria-labelledby="fm-title">
     <div class="sheet-in">
       <div class="sheet-head">
@@ -639,7 +687,7 @@ details.steps ol > li { min-width: 0; }
         <button type="button" class="icon-btn" id="fl-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
       <div id="fl-body" aria-live="polite"></div>
-      <div class="sg-sum" id="sg-fl"></div>
+      <div class="sg-box" id="sg-fl"></div>
       <div class="actions">
         <button type="button" class="btn primary" id="fl-xl" disabled>تصدير (إكسل)</button>
         <button type="button" class="btn" id="fl-print" disabled>طباعة / حفظ PDF</button>
@@ -743,28 +791,10 @@ details.steps ol > li { min-width: 0; }
         <textarea id="rep-notes" rows="4" maxlength="1500" placeholder="اكتب ملاحظاتك والإجراءات التصحيحية هنا"></textarea>
         <p class="hint">تظهر في الطباعة وفي ملف الإكسل، وتُحفظ على هذا الجهاز لكل شهر.</p>
       </div>
-      <div class="sg-sum" id="sg-rep"></div>
+      <div class="sg-box" id="sg-rep"></div>
       <div class="actions">
         <button type="button" class="btn primary" id="rep-xl" disabled>تصدير التقرير (إكسل)</button>
         <button type="button" class="btn" id="rep-print">طباعة / حفظ PDF</button>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog id="dlg-sign" class="sheet" aria-labelledby="sg-title">
-    <div class="sheet-in">
-      <div class="sheet-head">
-        <h2 id="sg-title" tabindex="-1">قبل الطباعة</h2>
-        <button type="button" class="icon-btn" id="sg-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-      </div>
-      <p class="lead" id="sg-lead"></p>
-      <div class="field"><label for="sg-fum">المسؤول عن التبخير</label><input id="sg-fum" type="text" maxlength="40" autocomplete="off" enterkeyhint="next"></div>
-      <div class="field"><label for="sg-qm">مدير الجودة</label><input id="sg-qm" type="text" maxlength="40" autocomplete="off" enterkeyhint="next"></div>
-      <div class="field"><label for="sg-head">رئيس القطاع</label><input id="sg-head" type="text" maxlength="40" autocomplete="off" enterkeyhint="done"></div>
-      <p class="fine" id="sg-note"></p>
-      <div class="actions">
-        <button type="button" class="btn primary" id="sg-go">طباعة / حفظ PDF</button>
-        <button type="button" class="btn" id="sg-cancel">إلغاء</button>
       </div>
     </div>
   </dialog>
@@ -823,7 +853,20 @@ details.steps ol > li { min-width: 0; }
         <div class="field" id="m-dis-wrap" hidden>
           <button type="button" class="btn small danger" id="m-disconnect" data-armed="0">فصل المزامنة</button>
           <p class="hint">بعد الفصل يعود التطبيق إلى وضع الجهاز الواحد، وتبقى بيانات المخزن محفوظة في السحابة.</p>
-        </div>
+      </div>
+      <div class="field" id="m-rot-wrap">
+        <label for="m-rot-del">المساحة القديمة بعد النقل</label>
+        <select id="m-rot-del">
+          <option value="3">تتحذف تلقائيًا بعد 3 أيام (مقترح)</option>
+          <option value="0">تتحذف فورًا بعد التأكد من النسخ</option>
+          <option value="-1">متتحذفش</option>
+        </select>
+        <button type="button" class="btn small" id="m-rotate" data-armed="0">تغيير رابط المزامنة</button>
+        <p class="hint">لو حد خرج من الفريق: بيعمل رابط جديد وينسخ له كل البيانات (كل المخازن والتبخير والإجراءات والقراءات) وبيتأكد إنها وصلت كاملة قبل أي حذف. ابعت الرابط الجديد للفريق اللي فاضل بس. الحذف التلقائي بيتنفذ من الجهاز ده أول ما تفتح البرنامج بعد الميعاد، وفيه فرصة تلغيه.</p>
+        <p class="hint" id="m-pend" hidden></p>
+        <button type="button" class="btn small" id="m-pend-cancel" hidden>إلغاء الحذف المجدول</button>
+        <button type="button" class="btn small danger" id="m-pend-now" data-armed="0" hidden>حذف المساحة القديمة الآن</button>
+      </div>
         <p class="fine" id="m-ver"></p>
       </section>
 
@@ -878,7 +921,7 @@ details.steps ol > li { min-width: 0; }
   var SETUP_KEY = "wh-standalone-v1";
   var LOCAL_KEY = "warehouse-lots-v2";
   var FB_BASE = "https://www.gstatic.com/firebasejs/10.14.1/";
-  var APP_VERSION = "1.1";
+  var APP_VERSION = "1.0";
   var RULES = [
     "rules_version = '2';",
     "service cloud.firestore {",
@@ -1248,7 +1291,7 @@ details.steps ol > li { min-width: 0; }
         if (key === baseKey) return Promise.reject(new Error("base_warehouse"));
         return getDb().then(function (x) {
           var seq = Promise.resolve();
-          ["lots", "entries", "config", "climate", "fumlog"].forEach(function (name) {
+          ["lots", "entries", "config", "climate", "fumlog", "capa"].forEach(function (name) {
             seq = seq.then(function () {
               return getDocsSmart(x, col(x, name)).then(function (sn) {
                 var docs = sn.docs, s2 = Promise.resolve();
@@ -1284,14 +1327,20 @@ details.steps ol > li { min-width: 0; }
         });
       },
       deleteFum: function (id) { return getDb().then(function (x) { return settleWrite(x.F.deleteDoc(ref(x, "fumlog", id))); }); },
-      getConf: function (name) {
+      addCapa: function (r) {
+        var id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "capa", id), { lot: r.lot, label: r.label, dev: r.dev, dd: r.dd, action: r.action, who: r.who, due: r.due, st: "open", by: r.by, at: Date.now() })); });
+      },
+      listCapa: function () {
         return getDb().then(function (x) {
-          return x.F.getDoc(ref(x, "config", name)).then(function (sn) { return sn.exists() ? sn.data() : null; });
+          return getDocsSmart(x, col(x, "capa")).then(function (sn) {
+            return sn.docs.map(function (d) { var v = d.data(); return { id: d.id, lot: String(v.lot || ""), label: String(v.label || ""), dev: String(v.dev || ""), dd: String(v.dd || ""), action: String(v.action || ""), who: String(v.who || ""), due: String(v.due || ""), st: v.st === "done" ? "done" : "open", cd: String(v.cd || ""), cn: String(v.cn || ""), rel: v.rel && typeof v.rel === "object" ? { d: String(v.rel.d || ""), by: String(v.rel.by || ""), n: String(v.rel.n || "") } : null, by: v.by || "", at: +v.at || 0 }; });
+          });
         });
       },
-      saveConf: function (name, o) {
-        return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "config", name), o)); });
-      },
+      closeCapa: function (id, cd, cn) { return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "capa", id), { st: "done", cd: cd, cn: cn }, { merge: true })); }); },
+      releaseCapa: function (id, rel) { return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "capa", id), { rel: rel }, { merge: true })); }); },
+      deleteCapa: function (id) { return getDb().then(function (x) { return settleWrite(x.F.deleteDoc(ref(x, "capa", id))); }); },
       getHub: function () {
         return getDb().then(function (x) {
           return x.F.getDoc(x.F.doc(x.db, "warehouses", baseKey || key, "config", "hub")).then(function (sn) { return sn.exists() ? sn.data() : null; });
@@ -1366,6 +1415,80 @@ details.steps ol > li { min-width: 0; }
     if (!writeSetup(s)) { fail(errId, "تعذّر حفظ الإعدادات على هذا الجهاز. إن كنت في وضع التصفح الخاص فافتح التطبيق في نافذة عادية."); return; }
     location.reload();
   }
+  function withTimeout(p, ms) {
+    return new Promise(function (res, rej) {
+      var t = setTimeout(function () { rej(new Error("timeout")); }, ms);
+      p.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); });
+    });
+  }
+  var COLS_COPY = ["lots", "entries", "config", "climate", "fumlog", "capa"];
+  var COLS_DEL = ["lots", "entries", "climate", "fumlog", "capa", "config"];
+  function wsPath(key, id) { return id === "1" ? key : key + "-" + id; }
+  function hubIds(x, key) {
+    return withTimeout(x.F.getDoc(x.F.doc(x.db, "warehouses", key, "config", "hub")), 30000).then(function (sn) {
+      var hub = sn.exists() ? sn.data() : null;
+      return ["1"].concat(((hub && hub.list) || []).map(function (w) { return w && w.id; }).filter(function (id) { return typeof id === "string" && id !== "1" && /^[a-z0-9]{1,12}$/.test(id); }));
+    });
+  }
+  /* copy every warehouse of a workspace to a new key and check that each collection arrived complete */
+  function rotateWorkspace(cfg, oldKey, newKey, progress) {
+    return openDb(cfg).then(function (x) {
+      var F = x.F, n = 0;
+      function copyCol(from, to, name) {
+        return withTimeout(F.getDocs(F.collection(x.db, "warehouses", from, name)), 60000).then(function (sn) {
+          var docs = sn.docs, seq = Promise.resolve();
+          for (var i = 0; i < docs.length; i += 300) (function (part) {
+            seq = seq.then(function () {
+              var b = F.writeBatch(x.db);
+              part.forEach(function (d) { b.set(F.doc(x.db, "warehouses", to, name, d.id), d.data()); });
+              return withTimeout(b.commit(), 60000).then(function () { n += part.length; progress(n); });
+            });
+          })(docs.slice(i, i + 300));
+          return seq.then(function () {
+            return withTimeout(F.getDocs(F.collection(x.db, "warehouses", to, name)), 60000).then(function (s2) { if (s2.docs.length < docs.length) throw new Error("verify"); });
+          });
+        });
+      }
+      return hubIds(x, oldKey).then(function (ids) {
+        return ids.reduce(function (p, id) {
+          return p.then(function () { return COLS_COPY.reduce(function (q, c) { return q.then(function () { return copyCol(wsPath(oldKey, id), wsPath(newKey, id), c); }); }, Promise.resolve()); });
+        }, Promise.resolve()).then(function () { return ids; });
+      });
+    });
+  }
+  /* delete a workspace (derived warehouses first, the base last), only if the guard workspace really holds data */
+  function deleteWorkspace(cfg, key, ids, guardKey) {
+    return openDb(cfg).then(function (x) {
+      var F = x.F;
+      function delCol(wid, name) {
+        return withTimeout(F.getDocs(F.collection(x.db, "warehouses", wid, name)), 60000).then(function (sn) {
+          var docs = sn.docs, seq = Promise.resolve();
+          for (var i = 0; i < docs.length; i += 300) (function (part) {
+            seq = seq.then(function () {
+              var b = F.writeBatch(x.db);
+              part.forEach(function (d) { b.delete(d.ref); });
+              return withTimeout(b.commit(), 60000);
+            });
+          })(docs.slice(i, i + 300));
+          return seq;
+        });
+      }
+      var guard = guardKey ? withTimeout(F.getDocs(F.collection(x.db, "warehouses", guardKey, "config")), 30000).then(function (sn) { if (!sn.docs.length) throw new Error("guard"); }) : Promise.resolve();
+      return guard.then(function () {
+        return ids.slice().reverse().reduce(function (p, id) {
+          return p.then(function () { return COLS_DEL.reduce(function (q, c) { return q.then(function () { return delCol(wsPath(key, id), c); }); }, Promise.resolve()); });
+        }, Promise.resolve());
+      });
+    });
+  }
+  function readPending() {
+    try { var o = JSON.parse(lsGet("lots-old-delete") || "null"); return o && typeof o.k === "string" && Array.isArray(o.ids) ? o : null; } catch (e) { return null; }
+  }
+  function cleanupOld() {
+    var rec = readPending();
+    if (!rec || !setup || setup.mode !== "cloud" || setup.key === rec.k || !setup.cfg || setup.cfg.projectId !== rec.p || Date.now() < rec.at) return;
+    deleteWorkspace(setup.cfg, rec.k, rec.ids, setup.key).then(function () { lsSet("lots-old-delete", ""); toast("تم حذف المساحة القديمة."); }, function () { /* tried again at the next start */ });
+  }
   function currentName() { return setup ? setup.name : pendingName; }
 
   function openWelcome() {
@@ -1382,7 +1505,12 @@ details.steps ol > li { min-width: 0; }
     $("m-share").hidden = !cloud;
     $("m-local").hidden = cloud;
     $("m-dis-wrap").hidden = !cloud;
+    $("m-rot-wrap").hidden = !cloud;
+    var pr = readPending();
+    $("m-pend").hidden = $("m-pend-cancel").hidden = $("m-pend-now").hidden = !(cloud && pr);
+    if (cloud && pr) $("m-pend").textContent = pr.at > Date.now() ? "حذف المساحة القديمة مجدول بعد " + Math.ceil((pr.at - Date.now()) / 86400000) + " يوم من الجهاز ده." : "حذف المساحة القديمة هيتنفذ أول ما تفتح البرنامج على الجهاز ده.";
     if (cloud) $("m-link").value = makeShareLink(setup);
+    if (cloud && Date.now() - parseInt(lsGet("lots-rotated") || "0", 10) < 86400000) msg("تم إنشاء رابط جديد ونسخ كل البيانات. انسخ الرابط الجديد وابعته للفريق اللي فاضل. الرابط القديم لسه شغال وبياناته زي ما هي ومش بيتحدّث.");
     $("m-sharebtn").hidden = !navigator.share;
     $("m-name").value = setup.name;
     $("m-ver").textContent = "الإصدار " + APP_VERSION + " · تطبيق مستقل";
@@ -1498,6 +1626,40 @@ details.steps ol > li { min-width: 0; }
       finish({ mode: "local", name: setup.name }, "m-msg");
     });
 
+    $("m-rotate").addEventListener("click", function () {
+      var b = this;
+      if (!setup || setup.mode !== "cloud") return;
+      if (b.getAttribute("data-armed") !== "1") { arm(b, "تأكيد: إنشاء رابط جديد", "تغيير رابط المزامنة"); return; }
+      clearTimeout(b._t);
+      b.disabled = true;
+      var oldKey = setup.key, newKey = genKey(), mode = parseInt($("m-rot-del").value, 10), cfg = setup.cfg;
+      msg("جارٍ نسخ البيانات للرابط الجديد…");
+      rotateWorkspace(cfg, oldKey, newKey, function (n) { msg("جارٍ نسخ البيانات… (" + n + " عنصر)"); }).then(function (ids) {
+        lsSet("lots-rotated", String(Date.now()));
+        if (mode < 0) return null;
+        lsSet("lots-old-delete", JSON.stringify({ k: oldKey, p: cfg.projectId, ids: ids, at: Date.now() + Math.max(mode, 0) * 86400000 }));
+        if (mode > 0) return null;
+        msg("جارٍ حذف المساحة القديمة…");
+        return deleteWorkspace(cfg, oldKey, ids, newKey).then(function () { lsSet("lots-old-delete", ""); }, function () { /* stays scheduled and is retried */ });
+      }).then(function () {
+        finish({ mode: "cloud", name: setup.name, cfg: cfg, key: newKey }, "m-msg");
+      }, function () {
+        b.disabled = false;
+        b.setAttribute("data-armed", "0");
+        b.textContent = "تغيير رابط المزامنة";
+        msg("تعذّر النسخ أو التأكد منه، ولم يتم حذف أي شيء. تأكد من الاتصال وحاول مرة أخرى. البيانات القديمة لم تتأثر.");
+      });
+    });
+    $("m-pend-cancel").addEventListener("click", function () { lsSet("lots-old-delete", ""); openMain(); });
+    $("m-pend-now").addEventListener("click", function () {
+      var b = this, rec = readPending();
+      if (!rec || !setup || setup.mode !== "cloud" || setup.key === rec.k) return;
+      if (b.getAttribute("data-armed") !== "1") { arm(b, "تأكيد الحذف النهائي", "حذف المساحة القديمة الآن"); return; }
+      clearTimeout(b._t);
+      b.disabled = true;
+      msg("جارٍ حذف المساحة القديمة…");
+      deleteWorkspace(setup.cfg, rec.k, rec.ids, setup.key).then(function () { lsSet("lots-old-delete", ""); b.disabled = false; openMain(); msg("تم حذف المساحة القديمة."); }, function () { b.disabled = false; msg("تعذّر الحذف. حاول مرة أخرى."); });
+    });
     $("c-copyrules").addEventListener("click", function () { copyText(RULES, null); });
     $("c-back").addEventListener("click", function () { show(backTo); });
     $("c-go").addEventListener("click", function () {
@@ -1541,6 +1703,7 @@ details.steps ol > li { min-width: 0; }
     mode: setup ? setup.mode : "",
     person: setup ? setup.name : "",
     save: function (req) { return saveFile(req.filename, req.data); },
+    cleanupOld: cleanupOld,
     cloudStore: function (sub) { return makeCloudStore(setup.cfg, sub && sub !== "1" ? setup.key + "-" + sub : setup.key, setup.key); },
     bind: function (a) { api = a; },
     openSync: function () { openMain(); }
@@ -1677,7 +1840,7 @@ details.steps ol > li { min-width: 0; }
     return l.produced || l.label || l.notes ? "unchecked" : "empty";
   }
   function summarize(lots, layout) {
-    var out = { live: 0, dead: 0, clean: 0, unchecked: 0, empty: 0, fum: 0, recheck: 0, old: 0, risk: 0, late: 0, total: totalLots(layout) }, td = todayISO();
+    var out = { live: 0, dead: 0, clean: 0, unchecked: 0, empty: 0, fum: 0, recheck: 0, old: 0, risk: 0, late: 0, nocapa: 0, held: 0, total: totalLots(layout) }, td = todayISO();
     layout.parts.forEach(function (p) {
       for (var r = 1; r <= p.rows; r++) {
         for (var c = 1; c <= layout.cols; c++) {
@@ -1686,6 +1849,8 @@ details.steps ol > li { min-width: 0; }
           if (s0 !== "empty") { var a0 = lotAge(lt, td); if (a0 !== null && a0 >= fifoDays) out.old++; }
           var k0 = riskInfo(lots, p.id, r, c, td); if (k0 && k0.score >= 35) out.risk++;
           if (lateDays(lt, td) !== null) out.late++;
+          if (cpLoaded && s0 === "live" && lt && lt.inspected && !capaCovered(lotKey(p.id, r, c), lt.inspected)) out.nocapa++;
+          if (isHeld(lotKey(p.id, r, c), lt)) out.held++;
           if (s0 === "live") { var f0 = fumInfo(lt, td); if (f0) out[f0.re ? "recheck" : "fum"]++; }
         }
       }
@@ -1712,6 +1877,7 @@ details.steps ol > li { min-width: 0; }
       var fp = [];
       if (c.recheck) fp.push("مطلوب إعادة فحص " + c.recheck);
       if (c.fum) fp.push("تحت التبخير " + c.fum);
+      if (c.nocapa) fp.push("بدون إجراء تصحيحي " + c.nocapa);
       return { tone: "live", text: "نشاط حشري حي في " + lotsText(c.live) + (fp.length ? " (" + fp.join("، ") + ")" : "") };
     }
     if (c.dead > 0) return { tone: "dead", text: "لا يوجد نشاط حي. حشرات ميتة في " + lotsText(c.dead) };
@@ -1820,7 +1986,13 @@ details.steps ol > li { min-width: 0; }
     var o = (whList || []).filter(function (w) { return w.id === id; })[0];
     return o ? o.name : "";
   }
-  var FIFO_KEY = "lots-fifo-days", fifoDays = 90, INSP_KEY = "lots-insp-days", inspDays = 14, climateWarn = false;
+  var FIFO_KEY = "lots-fifo-days", fifoDays = 90, INSP_KEY = "lots-insp-days", inspDays = 14, climateWarn = false, cpList = [], cpLoaded = false;
+  function capaCovered(key, dd) { return cpList.some(function (x) { return x.lot === key && x.dd === dd; }); }
+  /* held = live activity, or a deviation whose release has not been approved yet */
+  function isHeld(key, l) {
+    if (!l || lotState(l) === "empty") return false;
+    return lotState(l) === "live" || cpList.some(function (r) { return r.lot === key && !r.rel && (!r.label || !l.label || r.label === l.label); });
+  }
   try { var iv0 = parseInt(localStorage.getItem(INSP_KEY), 10); if (iv0 >= 1 && iv0 <= 365) inspDays = iv0; } catch (e) { /* default */ }
   try { var fv0 = parseInt(localStorage.getItem(FIFO_KEY), 10); if (fv0 >= 1 && fv0 <= 3650) fifoDays = fv0; } catch (e) { /* default */ }
   function lotAge(lot, today) { return lot && lot.produced ? daysBetween(lot.produced, today) : null; }
@@ -2165,7 +2337,7 @@ details.steps ol > li { min-width: 0; }
   function cellHTML(p, pi, r, c) {
     if (state.loading) return '<button type="button" class="cell s-empty skel" disabled tabindex="-1" aria-hidden="true"></button>';
     var key = lotKey(p.id, r, c), l = state.lots.get(key), st = lotState(l), fu = st === "live" ? fumInfo(l, todayISO()) : null, ag = lotAge(l, todayISO()), od = st !== "empty" && ag !== null && ag >= fifoDays, rk = riskInfo(state.lots, p.id, r, c, todayISO()), rl = rk && rk.score >= 60 ? "hi" : rk && rk.score >= 35 ? "mid" : "", ld = lateDays(l, todayISO());
-    var dim = state.filter !== "all" && state.filter !== st && !(state.filter === "recheck" && fu && fu.re) && !(state.filter === "old" && od) && !(state.filter === "risk" && rl) && !(state.filter === "late" && ld !== null);
+    var dim = state.filter !== "all" && state.filter !== st && !(state.filter === "recheck" && fu && fu.re) && !(state.filter === "old" && od) && !(state.filter === "risk" && rl) && !(state.filter === "late" && ld !== null) && !(state.filter === "held" && isHeld(key, l));
     var hasLabel = !!(l && l.label);
     var aria = partTitle(pi) + "، الصف " + r + "، العمود " + c + (hasLabel ? "، " + l.label : "") + "، " + (l && l.produced ? "تاريخ الإنتاج " + fmtDate(l.produced) + "، " : "") + LONG[st] + (fu ? "، " + fumText(fu) : "") + (od ? "، عمر المرص " + daysText(ag) : "") + (rl ? "، أولوية فحص " + (rl === "hi" ? "عالية" : "متوسطة") : "");
     var body = hasLabel ? '<span class="c-id">' + esc(l.label) + "</span>" : '<span class="c-id num">' + r + "-" + c + "</span>";
@@ -2196,7 +2368,7 @@ details.steps ol > li { min-width: 0; }
     return out.join("");
   }
   function render() {
-    var sig = JSON.stringify([state.layout, Array.from(state.lots.entries()), state.filter, state.view, state.loading, state.slow, state.fatal, state.mode, state.canWrite, todayISO(), fifoDays, inspDays, climateWarn, whNameOf(whActive)]);
+    var sig = JSON.stringify([state.layout, Array.from(state.lots.entries()), state.filter, state.view, state.loading, state.slow, state.fatal, state.mode, state.canWrite, todayISO(), fifoDays, inspDays, climateWarn, cpLoaded ? cpList.length + ":" + cpList.filter(function (r) { return r.rel; }).length : -1, whNameOf(whActive)]);
     if (sig === lastSig) return;
     lastSig = sig;
     var L = state.layout, c = summarize(state.lots, L);
@@ -2209,12 +2381,13 @@ details.steps ol > li { min-width: 0; }
     if (state.loading) {
       elChips.innerHTML = "";
     } else {
-      if ((state.filter === "unchecked" || state.filter === "empty" || state.filter === "recheck" || state.filter === "old" || state.filter === "risk" || state.filter === "late") && c[state.filter] === 0) state.filter = "all";
+      if ((state.filter === "unchecked" || state.filter === "empty" || state.filter === "recheck" || state.filter === "old" || state.filter === "risk" || state.filter === "late" || state.filter === "held") && c[state.filter] === 0) state.filter = "all";
       var defs = [["all", "الكل", c.total, ""], ["live", "نشاط حي", c.live, "live"], ["dead", "نشاط ميت", c.dead, "dead"], ["clean", "سليم", c.clean, "clean"]];
       if (c.recheck) defs.splice(2, 0, ["recheck", "مطلوب إعادة فحص", c.recheck, "live"]);
       if (c.old) defs.push(["old", "قديم", c.old, ""]);
       if (c.risk) defs.push(["risk", "أولوية فحص", c.risk, ""]);
       if (c.late) defs.push(["late", "فحص متأخر", c.late, ""]);
+      if (c.held) defs.push(["held", "محجوز", c.held, ""]);
       if (c.unchecked) defs.push(["unchecked", "لم يُفحص", c.unchecked, "unchecked"]);
       if (c.empty) defs.push(["empty", "فاضي", c.empty, "empty"]);
       elChips.innerHTML = defs.map(function (d) {
@@ -2271,9 +2444,47 @@ details.steps ol > li { min-width: 0; }
       clearArchive: function (k) { delete data.archive[k]; persist(); return Promise.resolve(); },
       deleteAll: function () {
         if (!sub || sub === "1") return Promise.reject(new Error("base_warehouse"));
-        try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-climate"); localStorage.removeItem(KEY + "-fumlog"); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-climate"); localStorage.removeItem(KEY + "-fumlog"); localStorage.removeItem(KEY + "-capa"); } catch (e) { /* ignore */ }
         data = { layout: null, lots: {}, archive: {} };
         return Promise.resolve();
+      },
+      addCapa: function (r) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-capa") || "{}"), id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+          m[id] = { lot: r.lot, label: r.label, dev: r.dev, dd: r.dd, action: r.action, who: r.who, due: r.due, st: "open", by: r.by, at: Date.now() };
+          localStorage.setItem(KEY + "-capa", JSON.stringify(m));
+          return Promise.resolve();
+        } catch (e) { return Promise.reject(e); }
+      },
+      listCapa: function () {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-capa") || "{}");
+          return Promise.resolve(Object.keys(m).map(function (id) { var v = m[id] || {}; return { id: id, lot: String(v.lot || ""), label: String(v.label || ""), dev: String(v.dev || ""), dd: String(v.dd || ""), action: String(v.action || ""), who: String(v.who || ""), due: String(v.due || ""), st: v.st === "done" ? "done" : "open", cd: String(v.cd || ""), cn: String(v.cn || ""), rel: v.rel && typeof v.rel === "object" ? { d: String(v.rel.d || ""), by: String(v.rel.by || ""), n: String(v.rel.n || "") } : null, by: v.by || "", at: +v.at || 0 }; }));
+        } catch (e) { return Promise.resolve([]); }
+      },
+      releaseCapa: function (id, rel) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-capa") || "{}");
+          if (m[id]) m[id].rel = rel;
+          localStorage.setItem(KEY + "-capa", JSON.stringify(m));
+          return Promise.resolve();
+        } catch (e) { return Promise.reject(e); }
+      },
+      closeCapa: function (id, cd, cn) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-capa") || "{}");
+          if (m[id]) { m[id].st = "done"; m[id].cd = cd; m[id].cn = cn; }
+          localStorage.setItem(KEY + "-capa", JSON.stringify(m));
+          return Promise.resolve();
+        } catch (e) { return Promise.reject(e); }
+      },
+      deleteCapa: function (id) {
+        try {
+          var m = JSON.parse(localStorage.getItem(KEY + "-capa") || "{}");
+          delete m[id];
+          localStorage.setItem(KEY + "-capa", JSON.stringify(m));
+          return Promise.resolve();
+        } catch (e) { return Promise.reject(e); }
       },
       addFum: function (r) {
         try {
@@ -2679,6 +2890,210 @@ details.steps ol > li { min-width: 0; }
     }).then(function () { setExportBusy(false); });
   }
 
+  /* ---------- corrective actions (HACCP): every live-activity deviation needs a recorded action ---------- */
+  var cpBusy = false, cpCtx = null;
+  function capaLoad() {
+    return store.listCapa().then(function (list) {
+      cpList = list.filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.dd) && r.action; }).sort(function (a, b) {
+        return a.st !== b.st ? (a.st === "open" ? -1 : 1) : (a.due < b.due ? -1 : a.due > b.due ? 1 : 0);
+      });
+    });
+  }
+  function capaGaps() {
+    var out = [];
+    state.layout.parts.forEach(function (p) {
+      for (var r = 1; r <= p.rows; r++) for (var c = 1; c <= state.layout.cols; c++) {
+        var key = lotKey(p.id, r, c), l = state.lots.get(key);
+        if (l && lotState(l) === "live" && l.inspected && !capaCovered(key, l.inspected)) out.push({ key: key, l: l });
+      }
+    });
+    return out;
+  }
+  function capaPos(key) { var k = parseKey(key); return k ? partName(k.pid) + " · صف " + k.r + " · عمود " + k.c : ""; }
+  function relCheck(r) {
+    var l = state.lots.get(r.lot), td = todayISO(), st = l ? lotState(l) : "empty";
+    var fz = flList.filter(function (f) { return f.lot === r.lot && f.d >= r.dd; }).sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; })[0];
+    var fend = fz ? addDaysISO(fz.d, fz.days) : "";
+    var c1 = r.st === "done", c2 = !!fz && fend <= td;
+    var c3 = !!l && !!l.inspected && l.inspected > r.dd && (!fz || l.inspected >= fend) && st !== "live" && st !== "empty";
+    return { l: l, st: st, fz: fz, fend: fend, c1: c1, c2: c2, c3: c3, ready: c1 && c3 };
+  }
+  function relLines(c, r) {
+    var tick = function (ok) { return ok ? "✓ " : "✗ "; };
+    return [
+      tick(c.c1) + "الإجراء التصحيحي مغلق" + (c.c1 && r.cd ? " (" + fmtDate(r.cd) + ")" : ""),
+      tick(c.c2) + (c.fz ? "تبخير مسجّل ومنتهي (" + fmtDate(c.fz.d) + " حتى " + fmtDate(c.fend) + ")" : "لا توجد عملية تبخير مسجّلة بعد الانحراف"),
+      tick(c.c3) + (c.c3 ? "إعادة فحص بدون نشاط حي (" + fmtDate(c.l.inspected) + ")" : "لم تتم إعادة فحص بعد انتهاء التعريض بنتيجة بدون نشاط حي")
+    ];
+  }
+  function paintCapa() {
+    var box = $("cp-body"), td = todayISO(), can = state.canWrite !== false, gaps = capaGaps();
+    var open = cpList.filter(function (r) { return r.st === "open"; });
+    var wait = cpList.filter(function (r) { return r.st === "done" && !r.rel; }), rel = cpList.filter(function (r) { return !!r.rel; });
+    $("cp-xl").disabled = !cpList.length;
+    $("cp-print").disabled = !cpList.length;
+    var h = '<h3 class="rep-h">انحرافات بدون إجراء تصحيحي (' + gaps.length + ")</h3>";
+    h += gaps.length ? '<ul class="fl-list">' + gaps.map(function (g) {
+      return "<li><b>" + esc(g.l.label || "بدون اسم") + "</b> · " + esc(capaPos(g.key)) + " · فحص " + fmtDate(g.l.inspected) + (can ? ' <button type="button" class="btn small primary" data-cp-new="' + esc(g.key) + '">تسجيل إجراء</button>' : "") + "</li>";
+    }).join("") + "</ul>" : '<p class="fine">كل الانحرافات الحالية ليها إجراءات مسجّلة.</p>';
+    h += '<h3 class="rep-h">إجراءات مفتوحة (' + open.length + ")</h3>";
+    h += open.length ? '<ul class="fl-list">' + open.map(function (r) {
+      var late = r.due && r.due < td;
+      return "<li" + (late ? ' style="border-width:2.5px"' : "") + "><b>" + esc(r.label || "بدون اسم") + "</b> · " + esc(capaPos(r.lot)) + "<br><span>" + esc(r.dev) + " · " + fmtDate(r.dd) + "<br>الإجراء: " + esc(r.action) + (r.who ? " · المسؤول: " + esc(r.who) : "") + (r.due ? " · الموعد: " + fmtDate(r.due) : "") + (late ? " · <b>متأخر</b>" : "") + "</span>" +
+        (can ? ' <button type="button" class="btn small primary" data-cp-done="' + esc(r.id) + '">تم الإغلاق</button> <button type="button" class="btn small danger" data-cp-del="' + esc(r.id) + '">حذف</button>' : "") + "</li>";
+    }).join("") + "</ul>" : '<p class="fine">لا توجد إجراءات مفتوحة.</p>';
+    h += '<h3 class="rep-h">محجوز بانتظار قرار الإفراج (' + wait.length + ")</h3>";
+    h += wait.length ? '<ul class="fl-list">' + wait.map(function (r) {
+      var c = relCheck(r);
+      return "<li" + (c.ready ? ' style="border-width:2.5px"' : "") + "><b>" + esc(r.label || "بدون اسم") + "</b> · " + esc(capaPos(r.lot)) + "<br><span>" + relLines(c, r).map(esc).join("<br>") + "</span>" +
+        (can ? (c.ready ? ' <button type="button" class="btn small primary" data-rel="' + esc(r.id) + '">اعتماد الإفراج</button>' : "<br><span><b>غير جاهز للإفراج</b></span>") : "") + "</li>";
+    }).join("") + "</ul>" : '<p class="fine">لا توجد مرصات محجوزة بانتظار الإفراج.</p>';
+    if (rel.length) {
+      h += "<details><summary>تم الإفراج عنها (" + rel.length + ")</summary>" + '<ul class="fl-list">' + rel.slice(0, 20).map(function (r) {
+        return "<li><b>" + esc(r.label || "بدون اسم") + "</b> · " + esc(capaPos(r.lot)) + "<br><span>" + esc(r.dev) + " · " + fmtDate(r.dd) + "<br>أُفرج عنه " + fmtDate(r.rel.d) + (r.rel.by ? " · المعتمِد: " + esc(r.rel.by) : "") + (r.rel.n ? "<br>" + esc(r.rel.n) : "") + '</span> <button type="button" class="btn small" data-relprint="' + esc(r.id) + '">طباعة نموذج الإفراج</button></li>';
+      }).join("") + "</ul></details>";
+    }
+    box.innerHTML = h;
+  }
+  function capaForm(key, dd) {
+    var l = state.lots.get(key) || {}, lab = cleanTxt(l.label, 24);
+    cpCtx = { key: key, label: lab };
+    $("cf-lot").textContent = (lab || "بدون اسم") + " — " + capaPos(key);
+    $("cf-dev").value = "نشاط حشري حي";
+    $("cf-dd").value = dd || l.inspected || todayISO();
+    $("cf-act").value = "";
+    $("cf-who").value = state.myId || "";
+    $("cf-due").value = addDaysISO(todayISO(), 3);
+    hideErr($("cf-err"));
+    openDlg($("dlg-capa-form"));
+  }
+  function capaRefresh() { return capaLoad().then(function () { cpLoaded = true; render(); if ($("dlg-capa").open) paintCapa(); }); }
+  $("btn-capa").addEventListener("click", function () {
+    if (!store || !store.listCapa) { toast("الإجراءات التصحيحية غير متاحة في هذا الوضع."); return; }
+    fillSign($("sg-cp"));
+    paintCapa();
+    openDlg($("dlg-capa"));
+    capaRefresh().then(function () { return store.listFum ? loadFumLog() : null; }).then(paintCapa, function () { $("cp-body").innerHTML = '<p class="fine">تعذّر تحميل الإجراءات.</p>'; });
+  });
+  $("capa-add").addEventListener("click", function () { if (editing) capaForm(editing.key, $("f-inspected").value || todayISO()); });
+  $("cp-body").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button") : null;
+    if (!b) return;
+    if (b.hasAttribute("data-rel")) relOpen(b.getAttribute("data-rel"));
+    else if (b.hasAttribute("data-relprint")) relPrint(b.getAttribute("data-relprint"));
+    else if (b.hasAttribute("data-cp-new")) capaForm(b.getAttribute("data-cp-new"));
+    else if (b.hasAttribute("data-cp-done")) {
+      var note = window.prompt("ملاحظة الإغلاق (اختياري):", "");
+      if (note === null) return;
+      b.disabled = true;
+      store.closeCapa(b.getAttribute("data-cp-done"), todayISO(), cleanTxt(note, 200)).then(capaRefresh).then(null, function (ex) { toast(writeError(ex)); paintCapa(); });
+    } else if (b.hasAttribute("data-cp-del")) {
+      if (b.getAttribute("data-armed") !== "1") { arm(b, "اضغط مرة أخرى للحذف", "حذف"); return; }
+      clearTimeout(b._t);
+      b.disabled = true;
+      store.deleteCapa(b.getAttribute("data-cp-del")).then(capaRefresh).then(null, function (ex) { toast(writeError(ex)); paintCapa(); });
+    }
+  });
+  $("cf-save").addEventListener("click", function () {
+    var dd = $("cf-dd").value, due = $("cf-due").value, act = cleanTxt($("cf-act").value, 400), btn = $("cf-save");
+    hideErr($("cf-err"));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dd) || parseISO(dd) === null || dd > todayISO()) { showErr($("cf-err"), "اختر تاريخ انحراف صحيح لا يكون في المستقبل."); return; }
+    if (!act) { showErr($("cf-err"), "اكتب الإجراء التصحيحي."); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || parseISO(due) === null || due < dd) { showErr($("cf-err"), "اختر موعد إغلاق لا يسبق تاريخ الانحراف."); return; }
+    if (!cpCtx || cpBusy) return;
+    cpBusy = true;
+    btn.disabled = true;
+    store.addCapa({ lot: cpCtx.key, label: cpCtx.label, dev: cleanTxt($("cf-dev").value, 80) || "نشاط حشري حي", dd: dd, action: act, who: cleanTxt($("cf-who").value, 40), due: due, by: state.myId || "" })
+      .then(capaRefresh).then(function () { closeDlg($("dlg-capa-form")); toast("تم تسجيل الإجراء التصحيحي"); }, function (ex) { showErr($("cf-err"), writeError(ex)); })
+      .then(function () { cpBusy = false; btn.disabled = false; });
+  });
+  $("cf-close").addEventListener("click", function () { closeDlg($("dlg-capa-form")); });
+  $("cp-close").addEventListener("click", function () { closeDlg($("dlg-capa")); });
+  function capaRows() {
+    return cpList.map(function (r) {
+      return [fmtDate(r.dd), r.label || "بدون اسم", capaPos(r.lot), r.dev, r.action, r.who, r.due ? fmtDate(r.due) : "", r.st === "done" ? "مغلق" : "مفتوح", r.cd ? fmtDate(r.cd) : "", r.cn, r.rel ? "أُفرج " + fmtDate(r.rel.d) + " · " + r.rel.by : "محجوز"];
+    });
+  }
+  $("cp-xl").addEventListener("click", function () {
+    if (!cpList.length || cpBusy || !downloadsCap) return;
+    var btn = $("cp-xl");
+    cpBusy = true;
+    btn.disabled = true;
+    loadExcelJS().then(function (X) {
+      var wb = new X.Workbook();
+      wb.creator = "نظام الجودة";
+      wb.created = new Date();
+      var ws = wb.addWorksheet("الإجراءات التصحيحية", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
+      var heads = [["تاريخ الانحراف", 14], ["المرص", 18], ["الموقع", 28], ["الانحراف", 20], ["الإجراء التصحيحي", 40], ["المسؤول", 16], ["الموعد النهائي", 14], ["الحالة", 10], ["تاريخ الإغلاق", 14], ["ملاحظة الإغلاق", 28], ["قرار الإفراج", 30]];
+      heads.forEach(function (h, i) { ws.getColumn(i + 1).width = h[1]; xlHead(ws.getCell(1, i + 1), h[0]); });
+      ws.getRow(1).height = 30;
+      capaRows().forEach(function (row, ri) {
+        row.forEach(function (v, i) { var c = ws.getCell(ri + 2, i + 1); c.value = v === "" ? null : v; xlBody(c, i === 4 || i === 9 || i === 10, i === 4 || i === 9 || i === 10); });
+      });
+      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: heads.length } };
+      return wb.xlsx.writeBuffer();
+    }).then(function (buf) {
+      return downloadsCap.save({ filename: "corrective-actions-" + (whActive === "1" ? "" : whActive + "-") + todayISO() + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
+    }).then(function () { toast("تم حفظ ملف الإكسل"); }, function (ex) {
+      if (ex && ex.code === "declined") return;
+      toast(ex && ex.message === "exceljs_load" ? "تعذّر تحميل مكتبة الإكسل. تحقق من الاتصال وحاول مرة أخرى." : "تعذّر تجهيز الملف. حاول مرة أخرى.");
+    }).then(function () { cpBusy = false; btn.disabled = !cpList.length; });
+  });
+  $("cp-print").addEventListener("click", function () {
+    if (!cpList.length) return;
+    var logo = document.querySelector(".brand img"), wn = whNameOf(whActive) || state.layout.name || "المخزن";
+    var h = '<div class="pr-head">' + (logo ? '<img src="' + logo.src + '" alt="">' : "") + "<div><h1>سجل الإجراءات التصحيحية</h1><p>المخزن: " + esc(wn) + " · تاريخ الإصدار: " + fmtDate(todayISO()) + "</p></div></div>";
+    h += '<table class="pr-t"><tr><th>تاريخ الانحراف</th><th>المرص</th><th>الموقع</th><th>الانحراف</th><th>الإجراء التصحيحي</th><th>المسؤول</th><th>الموعد</th><th>الحالة</th><th>الإغلاق</th></tr>' + capaRows().slice(0, 300).map(function (r) {
+      return "<tr>" + [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] + (r[9] ? " · " + r[9] : "")].map(function (v) { return "<td>" + esc(String(v)) + "</td>"; }).join("") + "</tr>";
+    }).join("") + "</table>" + signHTML();
+    $("print-area").innerHTML = h;
+    window.print();
+  });
+
+  var relCtx = null;
+  function relOpen(id) {
+    var r = cpList.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    var c = relCheck(r);
+    relCtx = { r: r, c: c };
+    $("rl-lot").textContent = (r.label || "بدون اسم") + " — " + capaPos(r.lot);
+    $("rl-check").innerHTML = '<p class="fine">' + relLines(c, r).map(esc).join("<br>") + "</p>" + (c.c2 ? "" : '<p class="fine"><b>لا يوجد تبخير مسجّل: اكتب سبب الإفراج في الملاحظة.</b></p>');
+    $("rl-by").value = signGet(1) || state.myId || "";
+    $("rl-note").value = "";
+    hideErr($("rl-err"));
+    openDlg($("dlg-rel"));
+  }
+  $("rl-save").addEventListener("click", function () {
+    if (!relCtx || cpBusy) return;
+    var by = cleanTxt($("rl-by").value, 40), note = cleanTxt($("rl-note").value, 300), btn = $("rl-save");
+    hideErr($("rl-err"));
+    if (!relCtx.c.ready) { showErr($("rl-err"), "الشروط غير مستوفاة. أغلق الإجراء وأعد الفحص أولًا."); return; }
+    if (!by) { showErr($("rl-err"), "اكتب اسم المعتمِد."); return; }
+    if (!relCtx.c.c2 && !note) { showErr($("rl-err"), "اكتب سبب الإفراج بدون تبخير مسجّل."); return; }
+    cpBusy = true;
+    btn.disabled = true;
+    store.releaseCapa(relCtx.r.id, { d: todayISO(), by: by, n: note }).then(capaRefresh).then(function () { closeDlg($("dlg-rel")); toast("تم اعتماد الإفراج"); }, function (ex) { showErr($("rl-err"), writeError(ex)); }).then(function () { cpBusy = false; btn.disabled = false; });
+  });
+  $("rl-close").addEventListener("click", function () { closeDlg($("dlg-rel")); });
+  function relPrint(id) {
+    var r = cpList.filter(function (x) { return x.id === id; })[0];
+    if (!r || !r.rel) return;
+    var c = relCheck(r), logo = document.querySelector(".brand img"), wn = whNameOf(whActive) || state.layout.name || "المخزن";
+    var row = function (a, b) { return "<tr><th>" + a + "</th><td>" + b + "</td></tr>"; };
+    var h = '<div class="pr-head">' + (logo ? '<img src="' + logo.src + '" alt="">' : "") + "<div><h1>نموذج قرار الإفراج</h1><p>المخزن: " + esc(wn) + " · تاريخ الإصدار: " + fmtDate(todayISO()) + "</p></div></div>";
+    h += '<table class="pr-t">' +
+      row("المرص", esc(r.label || "بدون اسم") + " — " + esc(capaPos(r.lot))) +
+      row("الانحراف", esc(r.dev) + " · " + fmtDate(r.dd)) +
+      row("الإجراء التصحيحي", esc(r.action) + (r.who ? " · المسؤول: " + esc(r.who) : "") + (r.due ? " · الموعد: " + fmtDate(r.due) : "")) +
+      row("إغلاق الإجراء", r.cd ? fmtDate(r.cd) + (r.cn ? " · " + esc(r.cn) : "") : "—") +
+      row("التبخير", c.fz ? esc(c.fz.mat) + (c.fz.dose ? " · " + esc(c.fz.dose) : "") + " · من " + fmtDate(c.fz.d) + " إلى " + fmtDate(c.fend) + (c.fz.who ? " · " + esc(c.fz.who) : "") : "لا يوجد تبخير مسجّل") +
+      row("إعادة الفحص", c.l && c.l.inspected ? fmtDate(c.l.inspected) + " · " + WORD[c.st] : "—") +
+      row("قرار الإفراج", "تم الإفراج بتاريخ " + fmtDate(r.rel.d) + " · المعتمِد: " + esc(r.rel.by) + (r.rel.n ? "<br>" + esc(r.rel.n) : "")) +
+      "</table>" + signHTML();
+    $("print-area").innerHTML = h;
+    window.print();
+  }
+
   /* ---------- fumigation record ---------- */
   var flList = [], flBusy = false;
   function cleanTxt(v, n) { return String(v || "").replace(/\s+/g, " ").trim().slice(0, n); }
@@ -2780,12 +3195,11 @@ details.steps ol > li { min-width: 0; }
       return "<tr><td>" + fmtDate(r.d) + "</td><td>" + esc(r.label || "بدون اسم") + "</td><td>" + esc(partName(k ? k.pid : "")) + (k ? " ص" + k.r + " ع" + k.c : "") + "</td><td>" + esc(r.mat) + "</td><td>" + esc(r.dose) + "</td><td>" + daysText(r.days) + "</td><td>" + esc(r.who) + "</td><td>" + esc(r.note) + "</td></tr>";
     }).join("") + "</table>";
     h += signHTML();
-    h += printFoot();
     $("print-area").innerHTML = h;
     window.print();
   }
   $("fl-xl").addEventListener("click", exportFumLog);
-  $("fl-print").addEventListener("click", function () { if (flList.length) askSigns(printFumLog); });
+  $("fl-print").addEventListener("click", printFumLog);
 
   /* ---------- quick inspection round ---------- */
   var rd = { list: [], i: 0, done: { clean: 0, dead: 0, live: 0 }, skip: 0, busy: false };
@@ -3254,133 +3668,34 @@ details.steps ol > li { min-width: 0; }
     });
     return '<svg class="trend" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="اتجاه نسبة الإصابة خلال آخر 6 شهور">' + g + "</svg>";
   }
-  /* ---------- names printed under the signature lines ----------
-     Three names (fumigation officer, quality manager, sector head). They are asked for in a small sheet
-     every time a printout is requested, kept on this device, and shared between devices through the
-     warehouse's config/signs document when the app is connected to the cloud. */
-  var SIGN_FIELDS = [
-    { k: "fum", title: "المسؤول عن التبخير" },
-    { k: "qm", title: "مدير الجودة" },
-    { k: "head", title: "رئيس القطاع" }
-  ];
-  var signs = { fum: "", qm: "", head: "", at: 0 }, signCtx = { after: null, dirty: false };
-  function cleanSign(v) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 40); }
-  function signsKey() { return "lots-signs-v2-" + whActive; }
-  function signsAny(o) { return SIGN_FIELDS.some(function (f) { return !!(o && o[f.k]); }); }
-  function signsReadLocal() {
-    var o = null;
-    try { o = JSON.parse(localStorage.getItem(signsKey()) || "null"); } catch (e) { o = null; }
-    if (o && typeof o === "object") return { fum: cleanSign(o.fum), qm: cleanSign(o.qm), head: cleanSign(o.head), at: +o.at || 0 };
-    var old = { fum: "", qm: "", head: "", at: 0 };
-    if (whActive === "1") {
-      /* names typed in the previous version of this screen (kept per device) */
-      try {
-        old.qm = cleanSign(localStorage.getItem("lots-sign-qm"));
-        old.head = cleanSign(localStorage.getItem("lots-sign-head"));
-      } catch (e) { /* none */ }
-    }
-    return old;
-  }
-  function signsWriteLocal() {
-    try { localStorage.setItem(signsKey(), JSON.stringify(signs)); } catch (e) { /* not saved */ }
-  }
-  function signsDoc() { return { fum: signs.fum, qm: signs.qm, head: signs.head, at: signs.at, by: state.myId || "" }; }
+  /* ---------- names printed under the signature lines ---------- */
+  var SIGN_KEYS = ["lots-sign-resp", "lots-sign-qm", "lots-sign-head"], SIGN_TITLES = ["المسؤول عن الإعداد", "مدير الجودة", "رئيس القطاع"];
+  function signGet(i) { try { return localStorage.getItem(SIGN_KEYS[i]) || ""; } catch (e) { return ""; } }
   function signHTML() {
-    return '<div class="pr-sign">' + SIGN_FIELDS.map(function (f) {
-      var n = signs[f.k];
-      return "<div>" + f.title + (n ? "<br><b>" + esc(n) + "</b>" : "") + "</div>";
+    return '<div class="pr-sign">' + SIGN_TITLES.map(function (t, i) {
+      var n = signGet(i) || (i === 0 ? state.myId || "" : "");
+      return "<div>" + t + (n ? "<br><b>" + esc(n) + "</b>" : "") + "</div>";
     }).join("") + "</div>";
   }
-  function printFoot() {
-    return '<p class="pr-foot">أُعدّ' + (state.myId ? " بواسطة " + esc(state.myId) : "") + " من نظام فحص المخزون · " + fmtDate(todayISO()) + "</p>";
-  }
-  /* the short summary inside the fumigation-log and monthly-report sheets */
-  function fillSign(box) {
-    var any = signsAny(signs), h = "<p><b>أسماء التوقيع في الورقة المطبوعة</b></p>";
-    if (any) {
-      h += SIGN_FIELDS.map(function (f) {
-        return "<p>" + f.title + ": " + (signs[f.k] ? "<b>" + esc(signs[f.k]) + "</b>" : '<span class="fine">لم تُكتب</span>') + "</p>";
-      }).join("");
-    } else h += '<p class="fine">لم تُكتب أسماء بعد، وستُطبع خطوط التوقيع فاضية.</p>';
-    h += '<button type="button" class="btn small" data-sg-edit>' + (any ? "تعديل الأسماء" : "كتابة الأسماء") + "</button>";
-    box.innerHTML = h;
-    box.setAttribute("data-empty", any ? "0" : "1");
-  }
   function signFields(box) {
-    box.addEventListener("click", function (e) {
-      if (e.target.closest && e.target.closest("[data-sg-edit]")) openSignDialog(null);
+    box.innerHTML = '<p class="hint">أسماء التوقيع في الطباعة (تُحفظ على هذا الجهاز):</p>' + ["اسم المسؤول عن الإعداد", "اسم مدير الجودة", "اسم رئيس القطاع"].map(function (l, i) {
+      return '<div class="field"><label>' + l + '</label><input type="text" maxlength="40" data-sg="' + i + '"></div>';
+    }).join("");
+    box.addEventListener("input", function (e) {
+      var el = e.target, i = el && el.getAttribute ? parseInt(el.getAttribute("data-sg"), 10) : NaN;
+      if (isNaN(i)) return;
+      try { if (el.value.trim()) localStorage.setItem(SIGN_KEYS[i], el.value.trim()); else localStorage.removeItem(SIGN_KEYS[i]); } catch (err) { /* not saved */ }
     });
-    fillSign(box);
   }
-  function paintSigns() { fillSign($("sg-rep")); fillSign($("sg-fl")); }
-  function fillSignFields() { SIGN_FIELDS.forEach(function (f) { $("sg-" + f.k).value = signs[f.k] || ""; }); }
-  /* a newer copy from the cloud replaces the one on this device */
-  function applySigns(o) {
-    if (!o || typeof o !== "object") return;
-    var at = +o.at || 0;
-    if (at <= signs.at) return;
-    signs = { fum: cleanSign(o.fum), qm: cleanSign(o.qm), head: cleanSign(o.head), at: at };
-    signsWriteLocal();
-    paintSigns();
-    if ($("dlg-sign").open && !signCtx.dirty) fillSignFields();
+  function fillSign(box) {
+    Array.prototype.forEach.call(box.querySelectorAll("input[data-sg]"), function (el) {
+      var i = parseInt(el.getAttribute("data-sg"), 10);
+      el.value = signGet(i) || (i === 0 ? state.myId || "" : "");
+    });
   }
-  function loadSignsFromStore() {
-    if (!store || !store.getConf) return;
-    store.getConf("signs").then(function (o) {
-      if (o) { applySigns(o); return; }
-      /* nothing shared yet: publish the names that were typed on this device */
-      if (signsAny(signs) && state.canWrite !== false) {
-        if (!signs.at) { signs.at = Date.now(); signsWriteLocal(); }
-        store.saveConf("signs", signsDoc()).then(null, function () { /* retried on the next save */ });
-      }
-    }, function () { /* offline: keep what is on this device */ });
-  }
-  function saveSigns(v, say) {
-    var n = { fum: cleanSign(v.fum), qm: cleanSign(v.qm), head: cleanSign(v.head), at: Date.now() };
-    if (n.fum === signs.fum && n.qm === signs.qm && n.head === signs.head) return;
-    signs = n;
-    signsWriteLocal();
-    paintSigns();
-    if (store && store.saveConf && state.canWrite !== false) {
-      store.saveConf("signs", signsDoc()).then(function () { if (say) toast("تم حفظ الأسماء وتزامنت مع الأجهزة"); }, function (ex) { toast(writeError(ex)); });
-    } else if (say) toast("تم حفظ الأسماء على هذا الجهاز");
-  }
-  function openSignDialog(after) {
-    signCtx.after = after || null;
-    signCtx.dirty = false;
-    fillSignFields();
-    $("sg-title").textContent = after ? "قبل الطباعة" : "أسماء التوقيع";
-    $("sg-lead").textContent = after
-      ? "اكتب أسماء المسؤولين لتظهر تحت خطوط التوقيع في الورقة المطبوعة. اترك الخانة فاضية لو هتوقّع بخط اليد."
-      : "اكتب أسماء المسؤولين لتظهر تحت خطوط التوقيع عند الطباعة.";
-    $("sg-note").textContent = state.mode === "db" && state.canWrite !== false && store && store.saveConf
-      ? "تُحفظ الأسماء وتظهر تلقائيًا على كل الأجهزة المتصلة بهذا المخزن."
-      : "تُحفظ الأسماء على هذا الجهاز.";
-    $("sg-go").textContent = after ? "طباعة / حفظ PDF" : "حفظ الأسماء";
-    openDlg($("dlg-sign"));
-    if (store && store.getConf) store.getConf("signs").then(applySigns, function () { /* offline */ });
-  }
-  function askSigns(after) { openSignDialog(after); }
-  $("dlg-sign").addEventListener("input", function () { signCtx.dirty = true; });
-  $("dlg-sign").addEventListener("keydown", function (e) {
-    if (e.key !== "Enter" || !e.target || e.target.tagName !== "INPUT") return;
-    e.preventDefault();
-    var ids = SIGN_FIELDS.map(function (f) { return "sg-" + f.k; }), i = ids.indexOf(e.target.id);
-    if (i >= 0 && i < ids.length - 1) $(ids[i + 1]).focus(); else $("sg-go").click();
-  });
-  $("sg-go").addEventListener("click", function () {
-    var vals = {}, after = signCtx.after;
-    SIGN_FIELDS.forEach(function (f) { vals[f.k] = $("sg-" + f.k).value; });
-    saveSigns(vals, !after);
-    signCtx.after = null;
-    closeDlg($("dlg-sign"));
-    if (after) after();
-  });
-  $("sg-cancel").addEventListener("click", function () { closeDlg($("dlg-sign")); });
-  $("sg-close").addEventListener("click", function () { closeDlg($("dlg-sign")); });
-  signs = signsReadLocal();
   signFields($("sg-rep"));
   signFields($("sg-fl"));
+  signFields($("sg-cp"));
   function repNotesKey() { return "lots-rep-notes-" + whActive + "-" + $("rep-month").value; }
   function loadRepNotes() {
     var v = "";
@@ -3417,14 +3732,11 @@ details.steps ol > li { min-width: 0; }
     var nt = ($("rep-notes").value || "").trim();
     h += "<h2>ملاحظات وإجراءات تصحيحية</h2>" + (nt ? '<p class="pr-notes">' + esc(nt).replace(/\n/g, "<br>") + "</p>" : '<div class="pr-lines"><div></div><div></div><div></div><div></div></div>');
     h += signHTML();
-    h += printFoot();
+    h += '<p class="pr-foot">أُعدّ من نظام فحص المخزون · ' + fmtDate(todayISO()) + "</p>";
     $("print-area").innerHTML = h;
     window.print();
   }
-  $("rep-print").addEventListener("click", function () {
-    if (!repData || !repData.total) { toast("لا توجد فحوصات لهذا الشهر"); return; }
-    askSigns(printReport);
-  });
+  $("rep-print").addEventListener("click", printReport);
   $("btn-report").addEventListener("click", function () {
     if (state.loading || !store) { toast("انتظر تحميل البيانات"); return; }
     if (!$("rep-month").value) $("rep-month").value = todayISO().slice(0, 7);
@@ -3451,6 +3763,7 @@ details.steps ol > li { min-width: 0; }
     var box = $("fum-box"), fu = checkedStatus() === "live" ? fumInfo({ status: "live", inspected: $("f-inspected").value || todayISO() }, todayISO()) : null;
     box.hidden = !fu;
     $("fum-add").hidden = !(checkedStatus() === "live" && !!editing && state.canWrite !== false && !!store && !!store.addFum);
+    $("capa-add").hidden = !(checkedStatus() === "live" && !!editing && state.canWrite !== false && !!store && !!store.addCapa);
     if (fu) { box.setAttribute("data-tone", fu.re ? "re" : "fum"); box.textContent = fumText(fu); }
   }
   $("f-inspected").addEventListener("input", paintFum);
@@ -3610,8 +3923,10 @@ details.steps ol > li { min-width: 0; }
     else { state.mode = "local"; store = makeLocalStore(whActive); }
     S.bind({ snapshot: function () { return { layout: state.layout, lots: state.lots }; }, store: store });
     store.start(callbacks);
+    if (S.cleanupOld) S.cleanupOld();
+    try { if (Date.now() - parseInt(localStorage.getItem("lots-rotated") || "0", 10) < 120000) setTimeout(function () { $("btn-sync").click(); }, 900); } catch (e) { /* ignore */ }
     if (store.getClimate) store.getClimate(climateFrom()).then(setClimate, function () { /* later */ });
-    loadSignsFromStore();
+    if (store.listCapa) capaLoad().then(function () { cpLoaded = true; render(); }, function () { /* later */ });
     if (store.getHub) store.getHub().then(function (h) { whList = normalizeHub(h); if (!whList.some(function (w) { return w.id === whActive; })) { switchWh("1"); return; } render(); }, function () { /* names load later */ });
   }
   boot();
