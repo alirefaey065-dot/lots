@@ -620,7 +620,7 @@ details.steps ol > li { min-width: 0; }
         <h2 id="cp-title" tabindex="-1">الإجراءات التصحيحية</h2>
         <button type="button" class="icon-btn" id="cp-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
-      <p class="hint">كل مرص بنشاط حي هو انحراف عن الحد الحرج، ومطلوب له إجراء تصحيحي مسجّل ومسؤول، وموعد الإغلاق إجباري بعد 5 أيام من بدء الإجراء.</p>
+      <p class="hint">كل مرص بنشاط حي هو انحراف عن الحد الحرج، ومطلوب له إجراء تصحيحي مسجّل ومسؤول، وموعد الإغلاق إجباري بعد 5 أيام من بدء عملية التبخير. ويفتح هذا النموذج تلقائيًا عند تسجيل عملية تبخير.</p>
       <div id="cp-body" aria-live="polite"></div>
       <div class="sg-box" id="sg-cp"></div>
       <div class="actions">
@@ -656,7 +656,7 @@ details.steps ol > li { min-width: 0; }
       <div class="field"><label for="cf-dd">تاريخ الانحراف (الفحص)</label><input id="cf-dd" type="date"></div>
       <div class="field"><label for="cf-act">الإجراء التصحيحي</label><textarea id="cf-act" rows="3" maxlength="400" placeholder="مثال: عزل المرص وتبخيره وإعادة الفحص بعد انتهاء التعريض"></textarea></div>
       <div class="field"><label for="cf-who">المسؤول عن التنفيذ</label><input id="cf-who" type="text" maxlength="40"></div>
-      <div class="field"><label for="cf-due">موعد الإغلاق الإجباري (5 أيام من بدء الإجراء)</label><input id="cf-due" type="date"></div>
+      <div class="field"><label for="cf-due">موعد الإغلاق الإجباري (5 أيام من بدء التبخير)</label><input id="cf-due" type="date"></div>
       <p class="err" id="cf-err" role="alert" hidden></p>
       <div class="actions"><button type="button" class="btn primary" id="cf-save">حفظ الإجراء</button></div>
     </div>
@@ -1971,11 +1971,26 @@ details.steps ol > li { min-width: 0; }
     return "تحت التبخير، باقي " + daysText(fu.left) + " (ينتهي " + fmtDate(fu.until) + ").";
   }
   var CAPA_DAYS = 5;
-  /* a live مرص with a recorded fumigation still running: its insect-activity status is locked until the full period ends */
+  /* closing deadline of a corrective action = start of the recorded fumigation (for this deviation) + CAPA_DAYS */
+  function capaBase(key, dd) {
+    var fz = (flList || []).filter(function (f) { return f.lot === key && f.d >= dd; }).sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; })[0];
+    return fz ? fz.d : todayISO();
+  }
+  /* recording a fumigation on a live مرص opens the corrective-action form straight away */
+  function afterFumCapa(rec) {
+    var l = state.lots.get(rec.lot);
+    if (!l || l.status !== "live" || !l.inspected || !store || !store.addCapa || !store.listCapa) return null;
+    return Promise.all([capaLoad(), loadFumLog()]).then(function () {
+      cpLoaded = true;
+      if (!capaCovered(rec.lot, l.inspected)) capaForm(rec.lot, l.inspected, rec);
+    }, function () { /* form stays reachable from the corrective-actions screen */ });
+  }
+  /* a live مرص is locked while its fumigation period runs: FUM_DAYS from the inspection date, or the recorded fumigation if that ends later */
   function fumLock(key, l, td) {
     if (!l || l.status !== "live" || !l.inspected) return null;
     var fz = (flList || []).filter(function (f) { return f.lot === key && f.d >= l.inspected; }).sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; })[0];
-    var end = fz ? addDaysISO(fz.d, fz.days) : "";
+    var end = addDaysISO(l.inspected, FUM_DAYS), rend = fz ? addDaysISO(fz.d, fz.days) : "";
+    if (rend && rend > end) end = rend;
     return end && end > td ? { until: end } : null;
   }
   function fumGuard(key, prev, nd) {
@@ -2972,17 +2987,18 @@ details.steps ol > li { min-width: 0; }
     }
     box.innerHTML = h;
   }
-  function capaForm(key, dd) {
+  function capaForm(key, dd, rec) {
     var l = state.lots.get(key) || {}, lab = cleanTxt(l.label, 24);
     cpCtx = { key: key, label: lab };
     $("cf-lot").textContent = (lab || "بدون اسم") + " — " + capaPos(key);
     $("cf-dev").value = "نشاط حشري حي";
     $("cf-dd").value = dd || l.inspected || todayISO();
-    $("cf-act").value = "";
-    $("cf-who").value = state.myId || "";
-    $("cf-due").value = addDaysISO(todayISO(), CAPA_DAYS); $("cf-due").disabled = true;
+    $("cf-act").value = rec ? "تبخير المرص بـ " + rec.mat + (rec.dose ? " (" + rec.dose + ")" : "") + " لمدة " + daysText(rec.days) + " من " + fmtDate(rec.d) + "، ثم إعادة الفحص بعد انتهاء التعريض." : "";
+    $("cf-who").value = rec && rec.who ? rec.who : state.myId || "";
+    $("cf-due").value = addDaysISO(rec ? rec.d : capaBase(key, $("cf-dd").value), CAPA_DAYS); $("cf-due").disabled = true;
     hideErr($("cf-err"));
     openDlg($("dlg-capa-form"));
+    if (!rec && store && store.listFum) loadFumLog().then(function () { $("cf-due").value = addDaysISO(capaBase(key, $("cf-dd").value), CAPA_DAYS); }, function () { /* keep current */ });
   }
   function capaRefresh() { return capaLoad().then(function () { cpLoaded = true; render(); if ($("dlg-capa").open) paintCapa(); }); }
   $("btn-capa").addEventListener("click", function () {
@@ -3012,7 +3028,7 @@ details.steps ol > li { min-width: 0; }
     }
   });
   $("cf-save").addEventListener("click", function () {
-    var dd = $("cf-dd").value, due = addDaysISO(todayISO(), CAPA_DAYS), act = cleanTxt($("cf-act").value, 400), btn = $("cf-save");
+    var dd = $("cf-dd").value, due = addDaysISO(capaBase(cpCtx ? cpCtx.key : "", dd), CAPA_DAYS), act = cleanTxt($("cf-act").value, 400), btn = $("cf-save");
     hideErr($("cf-err"));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dd) || parseISO(dd) === null || dd > todayISO()) { showErr($("cf-err"), "اختر تاريخ انحراف صحيح لا يكون في المستقبل."); return; }
     if (!act) { showErr($("cf-err"), "اكتب الإجراء التصحيحي."); return; }
@@ -3025,6 +3041,7 @@ details.steps ol > li { min-width: 0; }
       .then(function () { cpBusy = false; btn.disabled = false; });
   });
   $("cf-close").addEventListener("click", function () { closeDlg($("dlg-capa-form")); });
+  $("cf-dd").addEventListener("change", function () { if (cpCtx) $("cf-due").value = addDaysISO(capaBase(cpCtx.key, $("cf-dd").value), CAPA_DAYS); });
   $("cp-close").addEventListener("click", function () { closeDlg($("dlg-capa")); });
   function capaRows() {
     return cpList.map(function (r) {
@@ -3168,7 +3185,7 @@ details.steps ol > li { min-width: 0; }
     var rec = { lot: editing.key, label: cleanTxt($("f-label").value, 24), d: d, mat: mat, dose: cleanTxt($("fm-dose").value, 60), days: days, who: cleanTxt($("fm-who").value, 40), note: cleanTxt($("fm-note").value, 300), by: state.myId || "" };
     flBusy = true;
     btn.disabled = true;
-    store.addFum(rec).then(function () { closeDlg($("dlg-fum")); toast("تم تسجيل عملية التبخير"); }, function (ex) { showErr($("fm-err"), writeError(ex)); }).then(function () { flBusy = false; btn.disabled = false; });
+    store.addFum(rec).then(function () { closeDlg($("dlg-fum")); toast("تم تسجيل عملية التبخير"); return afterFumCapa(rec); }, function (ex) { showErr($("fm-err"), writeError(ex)); }).then(function () { flBusy = false; btn.disabled = false; });
   });
   $("fm-close").addEventListener("click", function () { closeDlg($("dlg-fum")); });
   $("fl-close").addEventListener("click", function () { closeDlg($("dlg-fumlog")); });
@@ -3781,7 +3798,7 @@ details.steps ol > li { min-width: 0; }
     box.hidden = !fu;
     $("fum-add").hidden = !(checkedStatus() === "live" && !!editing && state.canWrite !== false && !!store && !!store.addFum);
     $("capa-add").hidden = !(checkedStatus() === "live" && !!editing && state.canWrite !== false && !!store && !!store.addCapa);
-    if (fu) { box.setAttribute("data-tone", fu.re ? "re" : "fum"); box.textContent = fumText(fu); }
+    if (fu) { var lk = editing ? fumLock(editing.key, state.lots.get(editing.key), todayISO()) : null; box.setAttribute("data-tone", fu.re ? "re" : "fum"); box.textContent = fumText(fu) + (lk ? " حالة النشاط الحشري مقفولة حتى " + fmtDate(lk.until) + "." : ""); }
   }
   $("f-inspected").addEventListener("input", paintFum);
   $("seg").addEventListener("change", paintFum);
