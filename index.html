@@ -305,6 +305,40 @@ textarea { min-height: 84px; resize: vertical; }
 .c-old { display: block; margin-top: 2px; padding: 0 4px; border: 1.5px solid currentColor; border-radius: 6px; font-size: 10.5px; font-weight: 700; line-height: 1.25; }
 .cell[data-old="1"] { border-bottom-width: 5px; }
 .board[data-view="compact"] .c-old { display: none; }
+.c-exp { display: block; margin-top: 2px; padding: 0 4px; border: 1.5px dashed currentColor; border-radius: 6px; font-size: 10.5px; font-weight: 700; line-height: 1.25; }
+.cell[data-exp="x"] .c-exp { border-style: solid; border-color: var(--live-fg); background: var(--live-fg); color: var(--live-bg); }
+.board[data-view="compact"] .c-exp { display: none; }
+.cell[data-exp] { position: relative; }
+.cell[data-exp]::before { content: ""; position: absolute; bottom: 3px; inset-inline-end: 3px; width: 8px; height: 8px; box-sizing: border-box; border-radius: 2px; border: 2px solid currentColor; }
+.cell[data-exp="x"]::before { background: currentColor; }
+.hint[data-exp="x"], .hint[data-exp="s"] { font-weight: 600; }
+.hint[data-exp="x"] { color: var(--live-fg); }
+.hint[data-exp="s"] { color: var(--dead-fg); }
+.rep-list li[data-exp="s"] { border-color: var(--dead-line); background: var(--dead-bg); color: var(--dead-fg); }
+.rep-list li[data-exp="x"] { border-color: var(--live-line); background: var(--live-bg); color: var(--live-fg); }
+#btn-haccp { color: #0d9488; }
+#f-expiry { background: var(--sunken); color: var(--ink); cursor: default; }
+/* frame around the whole interface (not printed) */
+body::after { content: ""; position: fixed; inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); border: 3px solid var(--accent); pointer-events: none; z-index: 20; }
+@media print { body::after { display: none; } }
+.hc-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.hc-row { display: grid; gap: 8px; padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); }
+.hc-row[data-on="0"] { border-style: dashed; color: var(--muted); }
+.hc-top { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 6px 8px; }
+.hc-name { flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 700; line-height: 1.5; }
+.hc-cls, .hc-off { flex: none; padding: 0 9px; border-radius: 999px; border: 1.5px solid currentColor; font-size: 12px; font-weight: 700; line-height: 1.7; }
+.hc-cls { color: var(--note-fg); background: var(--note-bg); }
+.hc-off { color: var(--muted); }
+.hc-stat { margin: 0; display: flex; align-items: flex-start; gap: 7px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 13.5px; line-height: 1.6; }
+.hc-stat .ic { flex: none; width: 18px; height: 18px; margin-top: 3px; }
+.hc-stat[data-st="ok"] { background: var(--clean-bg); color: var(--clean-fg); border-color: var(--clean-line); }
+.hc-stat[data-st="warn"] { background: var(--dead-bg); color: var(--dead-fg); border-color: var(--dead-line); border-width: 2.5px; }
+.hc-stat[data-st="bad"] { background: var(--live-bg); color: var(--live-fg); border-color: var(--live-line); border-width: 2.5px; }
+.hc-stat[data-st="na"] { color: var(--muted); border-style: dashed; }
+.hc-dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 12px; font-size: 13px; line-height: 1.65; }
+.hc-dl dt { font-weight: 600; color: var(--muted); }
+.hc-dl dd { margin: 0; overflow-wrap: anywhere; }
+.hc-row .btn.small { justify-self: start; }
 .fifo-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; line-height: 1.6; }
 .fifo-list li { padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line); }
 .fifo-list li[data-old="1"] { border-width: 2.5px; font-weight: 600; }
@@ -339,6 +373,10 @@ textarea { min-height: 84px; resize: vertical; }
   .pr-sign div { padding-top: 6px; border-top: 1px solid #111; margin-top: 34px; }
   .pr-foot { margin-top: 18px; font-size: 10px; text-align: center; }
   .pr-sign b { font-size: 13px; }
+  .hc-pt { table-layout: fixed; font-size: 10px; line-height: 1.45; }
+  .hc-pt th, .hc-pt td { padding: 3px 4px; text-align: start; vertical-align: top; overflow-wrap: anywhere; }
+  .hc-pt th { text-align: center; }
+  .hc-pt thead { display: table-header-group; }
 }
 .top-actions .icon-btn { position: relative; background: color-mix(in srgb, currentColor 10%, transparent); }
 #btn-plan { color: #d97706; }
@@ -486,6 +524,7 @@ details.steps ol > li { min-width: 0; }
           <button type="button" class="icon-btn" id="btn-plan" aria-label="خطة الفحص اليوم"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></button>
           <button type="button" class="icon-btn" id="btn-fifo" aria-label="ترتيب الصرف والتنبيهات"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></button>
           <button type="button" class="icon-btn" id="btn-report" aria-label="تقرير شهري"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></button>
+          <button type="button" class="icon-btn" id="btn-haccp" aria-label="جدول مراقبة الهاسب"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.3-2.9 7.6-7 9.5-4.1-1.9-7-5.2-7-9.5V6z"/><path d="M8.8 12.2l2.3 2.3 4.2-4.6"/></svg></button>
           <button type="button" class="icon-btn" id="btn-sync" aria-label="المزامنة والنسخ الاحتياطي"></button>
           <button type="button" class="icon-btn" id="btn-settings" aria-label="تعديل تقسيمة المخزن">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
@@ -522,9 +561,14 @@ details.steps ol > li { min-width: 0; }
       </div>
       <fieldset class="bare" id="lot-fields">
         <div class="field">
-          <label for="f-produced">تاريخ الإنتاج</label>
+          <label for="f-produced">تاريخ الإنتاج (مطلوب)</label>
           <input id="f-produced" type="date">
           <p class="hint" id="f-age"></p>
+        </div>
+        <div class="field">
+          <label for="f-expiry">تاريخ الانتهاء (عامان من تاريخ الإنتاج)</label>
+          <input id="f-expiry" type="text" readonly tabindex="-1" aria-readonly="true" placeholder="—">
+          <p class="hint" id="f-exp-hint"></p>
         </div>
         <div>
           <p class="lbl" id="seg-lbl">حالة النشاط الحشري</p>
@@ -535,7 +579,7 @@ details.steps ol > li { min-width: 0; }
           <input id="f-inspected" type="date">
         </div>
         <div class="field">
-          <label for="f-label">رقم المرص أو اسمه <span class="opt">(اختياري)</span></label>
+          <label for="f-label">رقم المرص أو اسمه <span class="opt">(مطلوب)</span></label>
           <input id="f-label" type="text" maxlength="24">
         </div>
         <div class="field">
@@ -799,6 +843,94 @@ details.steps ol > li { min-width: 0; }
     </div>
   </dialog>
 
+  <dialog id="dlg-haccp" class="sheet" aria-labelledby="hc-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <div>
+          <h2 id="hc-title" tabindex="-1">جدول مراقبة الهاسب</h2>
+          <p class="sub" id="hc-sub"></p>
+        </div>
+        <button type="button" class="icon-btn" id="hc-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="hint">بنود المراقبة وحدودها وإجراءاتها التصحيحية. حالة كل بند تُقارن تلقائيًا بالبيانات المسجّلة في التطبيق. تصنيف البند (CCP أو OPRP أو PRP) يقرره فريق الهاسب، فاتركه «غير محدد» لحد ما يتحدد.</p>
+      <div class="rep-grid" id="hc-sum" aria-live="polite"></div>
+      <ul class="hc-list" id="hc-list"></ul>
+      <p class="fine" id="hc-note"></p>
+      <div class="sg-box" id="sg-hc"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="hc-print">طباعة / حفظ PDF</button>
+        <button type="button" class="btn" id="hc-add">إضافة بند</button>
+        <button type="button" class="btn danger" id="hc-reset" hidden>استعادة الخطة الافتراضية</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-hrow" class="sheet" aria-labelledby="hr-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="hr-title" tabindex="-1">تعديل بند</h2>
+        <button type="button" class="icon-btn" id="hr-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="hint" id="hr-note"></p>
+      <div class="field">
+        <label for="hr-name">نقطة المراقبة</label>
+        <input id="hr-name" type="text" maxlength="60" autocomplete="off" enterkeyhint="next">
+      </div>
+      <div class="field">
+        <label for="hr-hazard">الخطر</label>
+        <input id="hr-hazard" type="text" maxlength="120" autocomplete="off" enterkeyhint="next">
+      </div>
+      <div class="field">
+        <label for="hr-limit">الحد المقبول</label>
+        <textarea id="hr-limit" rows="2" maxlength="160"></textarea>
+      </div>
+      <div class="field">
+        <label for="hr-method">طريقة المراقبة</label>
+        <textarea id="hr-method" rows="2" maxlength="160"></textarea>
+      </div>
+      <div class="field">
+        <label for="hr-freq">التكرار</label>
+        <input id="hr-freq" type="text" maxlength="60" autocomplete="off" enterkeyhint="next">
+      </div>
+      <div class="field">
+        <label for="hr-who">المسؤول</label>
+        <input id="hr-who" type="text" maxlength="60" autocomplete="off" enterkeyhint="next">
+      </div>
+      <div class="field">
+        <label for="hr-action">الإجراء التصحيحي</label>
+        <textarea id="hr-action" rows="3" maxlength="200"></textarea>
+      </div>
+      <div class="field">
+        <label for="hr-rec">السجل</label>
+        <input id="hr-rec" type="text" maxlength="100" autocomplete="off" enterkeyhint="done">
+      </div>
+      <div class="field">
+        <span class="lbl" id="hr-cls-lbl">التصنيف</span>
+        <div class="viewseg" id="hr-cls" role="group" aria-labelledby="hr-cls-lbl">
+          <button type="button" data-cls="" aria-pressed="true">غير محدد</button>
+          <button type="button" data-cls="ccp" aria-pressed="false">CCP</button>
+          <button type="button" data-cls="oprp" aria-pressed="false">OPRP</button>
+          <button type="button" data-cls="prp" aria-pressed="false">PRP</button>
+        </div>
+        <p class="hint">CCP: نقطة تحكم حرجة · OPRP: برنامج متطلبات أولية تشغيلي · PRP: برنامج متطلبات أولية. القرار لفريق الهاسب.</p>
+      </div>
+      <div class="field">
+        <span class="lbl" id="hr-on-lbl">الحالة في الجدول</span>
+        <div class="viewseg" id="hr-on" role="group" aria-labelledby="hr-on-lbl">
+          <button type="button" data-on="1" aria-pressed="true">مفعّل</button>
+          <button type="button" data-on="0" aria-pressed="false">موقوف</button>
+        </div>
+        <p class="hint">البند الموقوف لا يظهر في الملخص ولا في الطباعة.</p>
+      </div>
+      <p class="err" id="hr-err" hidden></p>
+      <div class="actions">
+        <button type="button" class="btn primary" id="hr-save">حفظ البند</button>
+        <button type="button" class="btn" id="hr-default" hidden>استعادة النص الافتراضي</button>
+        <button type="button" class="btn danger" id="hr-del" hidden>حذف البند</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="dlg-sync" class="sheet" aria-labelledby="sync-title">
     <div class="sheet-in">
       <div class="sheet-head">
@@ -867,6 +999,12 @@ details.steps ol > li { min-width: 0; }
         <button type="button" class="btn small" id="m-pend-cancel" hidden>إلغاء الحذف المجدول</button>
         <button type="button" class="btn small danger" id="m-pend-now" data-armed="0" hidden>حذف المساحة القديمة الآن</button>
       </div>
+        <div class="field">
+          <p class="lbl">حذف كل البيانات</p>
+          <button type="button" class="btn small danger" id="m-wipe">حذف كل بيانات المخزن والبدء من الصفر</button>
+          <p class="hint">يمسح كل المرصات والأرشيف وسجل التبخير والإجراءات التصحيحية وقرارات الإفراج وقراءات الحرارة والإعدادات وخطة الهاسب للمخزن الحالي، ويرجع البرنامج فاضيًا بآخر تحديثاته. لا يمكن التراجع، وفي وضع المزامنة بيتمسح على كل الأجهزة. صدّر نسخة إكسل قبلها لو محتاج.</p>
+          <p class="err" id="m-wipe-err" role="alert" hidden></p>
+        </div>
         <p class="fine" id="m-ver"></p>
       </section>
 
@@ -1287,6 +1425,23 @@ details.steps ol > li { min-width: 0; }
           });
         });
       },
+      wipeAll: function () {
+        return getDb().then(function (x) {
+          var seq = Promise.resolve();
+          ["lots", "entries", "config", "climate", "fumlog", "capa"].forEach(function (name) {
+            seq = seq.then(function () {
+              return getDocsSmart(x, col(x, name)).then(function (sn) {
+                var docs = sn.docs, s2 = Promise.resolve();
+                for (var i = 0; i < docs.length; i += 100) (function (part) {
+                  s2 = s2.then(function () { return Promise.all(part.map(function (d) { return settleWrite(x.F.deleteDoc(d.ref)); })); });
+                })(docs.slice(i, i + 100));
+                return s2;
+              });
+            });
+          });
+          return seq;
+        });
+      },
       deleteAll: function () {
         if (key === baseKey) return Promise.reject(new Error("base_warehouse"));
         return getDb().then(function (x) {
@@ -1341,6 +1496,14 @@ details.steps ol > li { min-width: 0; }
       closeCapa: function (id, cd, cn) { return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "capa", id), { st: "done", cd: cd, cn: cn }, { merge: true })); }); },
       releaseCapa: function (id, rel) { return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "capa", id), { rel: rel }, { merge: true })); }); },
       deleteCapa: function (id) { return getDb().then(function (x) { return settleWrite(x.F.deleteDoc(ref(x, "capa", id))); }); },
+      getConf: function (name) {
+        return getDb().then(function (x) {
+          return x.F.getDoc(ref(x, "config", name)).then(function (sn) { return sn.exists() ? sn.data() : null; });
+        });
+      },
+      saveConf: function (name, o) {
+        return getDb().then(function (x) { return settleWrite(x.F.setDoc(ref(x, "config", name), o)); });
+      },
       getHub: function () {
         return getDb().then(function (x) {
           return x.F.getDoc(x.F.doc(x.db, "warehouses", baseKey || key, "config", "hub")).then(function (sn) { return sn.exists() ? sn.data() : null; });
@@ -1886,7 +2049,8 @@ details.steps ol > li { min-width: 0; }
   }
   function validateLot(d) {
     var today = todayISO();
-    if (!d.label && !d.produced && !d.status && !d.notes) return "أدخل تاريخ الإنتاج أو اختر الحالة أولًا.";
+    if (!String(d.label || "").trim()) return "اسم المرص (أو رقمه) مطلوب.";
+    if (!d.produced) return "تاريخ الإنتاج مطلوب.";
     if (d.produced && parseISO(d.produced) === null) return "تاريخ الإنتاج غير صالح.";
     if (d.produced && d.produced > today) return "تاريخ الإنتاج لا يمكن أن يكون في المستقبل.";
     if (d.inspected && parseISO(d.inspected) === null) return "تاريخ الفحص غير صالح.";
@@ -1998,8 +2162,9 @@ details.steps ol > li { min-width: 0; }
     return pre.then(function () {
       var k = prev ? fumLock(key, prev, todayISO()) : null;
       if (!k) return "";
-      var changed = (nd ? nd.status || "" : "") !== (prev.status || "") || (nd ? nd.inspected || "" : "") !== (prev.inspected || "");
-      return changed ? "المرص تحت التبخير حتى " + fmtDate(k.until) + ". لا يمكن تغيير حالة النشاط الحشري قبل تمام مدة التبخير." : "";
+      var chg = function (f) { return (nd ? nd[f] || "" : "") !== (prev[f] || ""); };
+      var changed = chg("status") || chg("inspected") || chg("label") || chg("produced");
+      return changed ? "المرص تحت التبخير حتى " + fmtDate(k.until) + ". لا يمكن تغيير حالة النشاط الحشري أو اسم المرص أو تاريخ إنتاجه قبل تمام مدة التبخير." : "";
     });
   }
   var WH_KEY = "lots-active-wh", whActive = "1", whList = null;
@@ -2061,6 +2226,103 @@ details.steps ol > li { min-width: 0; }
     if (a !== null && a >= fifoDays) { sc += 10; why.push("مرص قديم"); }
     if (climateWarn) { sc += 8; why.push("الظروف مناسبة لنشاط الحشرات"); }
     return { score: Math.min(100, sc), why: why };
+  }
+  /* ---------- HACCP monitoring table (pure parts) ----------
+     The app prepares the records. Whether a point is a CCP, an OPRP or a PRP is the HACCP team's decision, so the class stays empty until someone sets it. */
+  var HC_BUILTIN = ["live", "recheck", "insp", "climate", "expiry", "age"];
+  var HC_CLS = { "": "غير محدد", ccp: "CCP", oprp: "OPRP", prp: "PRP" };
+  var HC_FIELDS = ["name", "hazard", "limit", "method", "freq", "who", "action", "rec"];
+  var HC_MAX = { name: 60, hazard: 120, limit: 160, method: 160, freq: 60, who: 60, action: 200, rec: 100 };
+  var HC_ROWS_MAX = 30;
+  var HC_STATE = { ok: "ملتزم", warn: "يحتاج متابعة", bad: "خارج الحد", na: "بدون بيانات" };
+  /* default texts of the built-in points; the numbers follow the settings in force when the text is read (S) */
+  function hcDefault(id, S) {
+    var d = {
+      live: { name: "النشاط الحشري الحي في المرصات", hazard: "إصابة المنتج وتلوّثه بالحشرات الحية", limit: "لا يوجد نشاط حشري حي في أي مرص", method: "فحص بصري لكل مرص وتسجيل حالته (سليم / ميت / حي) في خريطة المخزن", freq: "كل " + daysText(S.insp), who: "", action: "عزل المرص المصاب وتبخيره وتسجيل العملية، ثم إعادة فحصه بعد " + daysText(S.fum), rec: "خريطة المخزن · أرشيف المرص" },
+      recheck: { name: "إعادة الفحص بعد التبخير", hazard: "بقاء الإصابة الحية بعد التبخير", limit: "إعادة فحص كل مرص تم تبخيره بعد " + daysText(S.fum) + " من تسجيل النشاط الحي", method: "متابعة المرصات المطلوب إعادة فحصها في خطة الفحص وجولة الفحص السريعة", freq: "عند حلول موعد إعادة الفحص", who: "", action: "إعادة فحص المرص فورًا وتسجيل النتيجة، وإعادة التبخير لو ظل النشاط حيًا", rec: "سجل التبخير · أرشيف المرص" },
+      insp: { name: "انتظام الفحص الدوري", hazard: "تأخر اكتشاف الإصابة", limit: "فحص كل مرص مرة على الأقل كل " + daysText(S.insp), method: "خطة الفحص اليومية وجولة الفحص السريعة", freq: "يوميًا حسب خطة الفحص", who: "", action: "فحص المرصات المتأخرة فورًا بترتيب الأولوية", rec: "أرشيف المرص · التقرير الشهري" },
+      climate: { name: "الحرارة والرطوبة", hazard: "ظروف تساعد على نشاط الحشرات وتكاثرها", limit: "ألا تجتمع حرارة " + S.t + "°م فأكثر مع رطوبة " + S.h + "% فأكثر", method: "قراءة جهاز قياس الحرارة والرطوبة وتسجيلها في التطبيق", freq: "مرة كل " + daysText(S.fresh) + " على الأقل", who: "", action: "رفع وتيرة الفحص وتحسين التهوية والتبريد", rec: "سجل الحرارة والرطوبة" },
+      expiry: { name: "صلاحية المنتج", hazard: "بقاء منتج منتهي الصلاحية أو صرفه", limit: "لا يوجد منتج منتهي الصلاحية، والتنبيه قبل الانتهاء بـ " + daysText(S.soon), method: "مراجعة تواريخ الانتهاء في خريطة المخزن وقائمة ترتيب الصرف", freq: "مع كل جولة فحص", who: "", action: "عزل المرص المنتهي وعدم صرفه، وإبلاغ مدير الجودة لاتخاذ القرار", rec: "خريطة المخزن · ترتيب الصرف" },
+      age: { name: "تدوير المخزون (الأقدم أولًا)", hazard: "طول مدة التخزين يزيد خطر الإصابة", limit: "ألا يبقى مرص أكثر من " + daysText(S.fifo) + " من تاريخ إنتاجه", method: "قائمة ترتيب الصرف", freq: "مع كل جولة فحص", who: "", action: "صرف الأقدم أولًا، أو فحصه بدقة قبل أي تأخير", rec: "ترتيب الصرف" }
+    };
+    return Object.prototype.hasOwnProperty.call(d, id) ? d[id] : null;
+  }
+  /* status of one built-in point from the data on screen. c = summarize(...), clim = { avail, state, last } */
+  function hcEval(id, c, S, clim, td) {
+    if (id === "climate") {
+      if (!clim || !clim.avail) return { st: "na", text: "القراءات غير متاحة في هذا الوضع" };
+      if (clim.state === "loading") return { st: "na", text: "جارٍ تحميل القراءات…" };
+      if (!clim.last) return { st: "na", text: clim.state === "fail" ? "تعذّر تحميل القراءات" : "لا توجد قراءات في آخر 90 يومًا" };
+      var l = clim.last, age = daysBetween(l.d, td), rd = l.t + "°م · " + l.h + "%";
+      if (age !== null && age > S.fresh) return { st: "warn", text: "آخر قراءة منذ " + daysText(age) + " (" + rd + ")" };
+      if (l.t >= S.t && l.h >= S.h) return { st: "bad", text: "آخر قراءة فوق الحد: " + rd };
+      return { st: "ok", text: "آخر قراءة ضمن الحد: " + rd };
+    }
+    if (c.total - c.empty === 0) return { st: "na", text: "لم يُسجَّل أي مرص بعد" };
+    if (id === "live") {
+      var seen = c.live + c.dead + c.clean;
+      if (!seen) return { st: "na", text: "لا توجد فحوصات مسجّلة بعد" };
+      if (c.live) return { st: "bad", text: "نشاط حي في " + lotsText(c.live) };
+      if (c.dead) return { st: "warn", text: "لا يوجد نشاط حي، وحشرات ميتة في " + lotsText(c.dead) };
+      return { st: "ok", text: "لا يوجد نشاط حي في المرصات المفحوصة (" + seen + ")" };
+    }
+    if (id === "recheck") {
+      if (c.recheck) return { st: "bad", text: "مطلوب إعادة فحص " + lotsText(c.recheck) + " بعد التبخير" };
+      if (c.fum) return { st: "ok", text: "تحت التبخير " + lotsText(c.fum) + "، ولم يحن موعد إعادة الفحص" };
+      return { st: "ok", text: "لا توجد مرصات تنتظر إعادة فحص" };
+    }
+    if (id === "insp") {
+      if (c.late) return { st: "warn", text: "فحص متأخر في " + lotsText(c.late) + " (أكثر من " + daysText(S.insp) + " بدون فحص)" };
+      return { st: "ok", text: "لا يوجد مرص تجاوز " + daysText(S.insp) + " بدون فحص" };
+    }
+    if (id === "expiry") {
+      if (c.expired) return { st: "bad", text: "منتهي الصلاحية في " + lotsText(c.expired) };
+      if (c.expsoon) return { st: "warn", text: "قرب انتهاء الصلاحية في " + lotsText(c.expsoon) + " (خلال " + daysText(S.soon) + ")" };
+      if (c.expset) return { st: "ok", text: "لا يوجد منتج منتهي أو قريب الانتهاء" };
+      return { st: "na", text: "لم تُسجَّل تواريخ انتهاء بعد" };
+    }
+    if (id === "age") {
+      if (c.old) return { st: "warn", text: "عمر المرص " + daysText(S.fifo) + " أو أكثر في " + lotsText(c.old) };
+      return { st: "ok", text: "لا يوجد مرص عمره " + daysText(S.fifo) + " أو أكثر" };
+    }
+    return { st: "na", text: "" };
+  }
+  function hcClip(v, n) { return typeof v === "string" || typeof v === "number" ? String(v).replace(/\s+/g, " ").trim().slice(0, n) : ""; }
+  /* A saved plan is { rows, at }. A built-in point is kept only when something differs from its default
+     (f holds just the edited texts); the points the user adds are kept in full. Anything malformed is dropped. */
+  function hcClean(o) {
+    o = o && typeof o === "object" ? o : {};
+    var src = Array.isArray(o.rows) ? o.rows : [], seen = {}, out = [], customs = 0, has = Object.prototype.hasOwnProperty;
+    for (var i = 0; i < src.length && out.length < HC_ROWS_MAX; i++) {
+      var r = src[i];
+      if (!r || typeof r !== "object" || typeof r.id !== "string" || !/^[a-z0-9]{1,16}$/.test(r.id) || has.call(seen, r.id)) continue;
+      var builtin = HC_BUILTIN.indexOf(r.id) >= 0, f = {}, fs = r.f && typeof r.f === "object" ? r.f : {};
+      HC_FIELDS.forEach(function (k) { var v = hcClip(fs[k], HC_MAX[k]); if (v) f[k] = v; });
+      if (!builtin) {
+        if (!f.name || customs >= HC_ROWS_MAX - HC_BUILTIN.length) continue;
+        customs++;
+      }
+      seen[r.id] = 1;
+      out.push({ id: r.id, on: r.on !== false, cls: typeof r.cls === "string" && has.call(HC_CLS, r.cls) ? r.cls : "", f: f });
+    }
+    return { rows: out, at: +o.at || 0 };
+  }
+  /* the rows as shown: the built-in points first (saved edits laid over the defaults), then the user's own */
+  function hcRows(conf, S) {
+    var by = {}, out = [];
+    conf.rows.forEach(function (r) { by[r.id] = r; });
+    HC_BUILTIN.forEach(function (id) {
+      var d = hcDefault(id, S), r = by[id] || { on: true, cls: "", f: {} }, row = { id: id, custom: false, on: r.on, cls: r.cls, edited: [] };
+      HC_FIELDS.forEach(function (k) { row[k] = r.f[k] || d[k]; if (r.f[k] && r.f[k] !== d[k]) row.edited.push(k); });
+      out.push(row);
+    });
+    conf.rows.forEach(function (r) {
+      if (HC_BUILTIN.indexOf(r.id) >= 0) return;
+      var row = { id: r.id, custom: true, on: r.on, cls: r.cls, edited: [] };
+      HC_FIELDS.forEach(function (k) { row[k] = r.f[k] || ""; });
+      out.push(row);
+    });
+    return out;
   }
   /* helpers:end */
 
@@ -2191,7 +2453,7 @@ details.steps ol > li { min-width: 0; }
       views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
       properties: { tabColor: { argb: "FF1A5A2F" } }
     });
-    var heads = [["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم المرص", 18], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ آخر فحص", 15], ["عمر المرص (يوم)", 15], ["ملاحظات", 40], ["سجلات الأرشيف", 15]];
+    var heads = [["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم المرص", 18], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ آخر فحص", 15], ["عمر المرص (يوم)", 15], ["ملاحظات", 40], ["سجلات الأرشيف", 15], ["تاريخ الانتهاء", 15], ["المتبقي للانتهاء (يوم)", 18]];
     heads.forEach(function (hd, i) { ls.getColumn(i + 1).width = hd[1]; xlHead(ls.getCell(1, i + 1), hd[0]); });
     ls.getRow(1).height = 30;
     var n = 1;
@@ -2202,7 +2464,7 @@ details.steps ol > li { min-width: 0; }
           if (st2 === "empty") continue;
           n++;
           var arc = d.archive.get(k2);
-          var vals = [partTitle(pi), rr, cc, lot2.label || "", xlDate(lot2.produced), WORD[st2], xlDate(lot2.inspected), null, lot2.notes || "", arc ? arc.length : 0];
+          var vals = [partTitle(pi), rr, cc, lot2.label || "", xlDate(lot2.produced), WORD[st2], xlDate(lot2.inspected), null, lot2.notes || "", arc ? arc.length : 0, xlDate(expOf(lot2.produced)), null];
           vals.forEach(function (v, i) {
             var cl = ls.getCell(n, i + 1);
             cl.value = v;
@@ -2210,6 +2472,13 @@ details.steps ol > li { min-width: 0; }
           });
           ls.getCell(n, 5).numFmt = "dd/mm/yyyy";
           ls.getCell(n, 7).numFmt = "dd/mm/yyyy";
+          ls.getCell(n, 11).numFmt = "dd/mm/yyyy";
+          var xe = expOf(lot2.produced);
+          if (xe) {
+            var left2 = daysBetween(d.today || todayISO(), xe), lc2 = ls.getCell(n, 12);
+            lc2.value = { formula: 'IF(K' + n + '="","",K' + n + "-TODAY())", result: left2 === null ? "" : left2 };
+            lc2.numFmt = "0";
+          }
           var sc = ls.getCell(n, 6);
           sc.fill = xlSolid(XL[st2].fill);
           sc.font = { name: XL_FONT, size: 11, bold: true, color: { argb: XL[st2].font } };
@@ -2228,7 +2497,7 @@ details.steps ol > li { min-width: 0; }
       views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
       properties: { tabColor: { argb: "FF6F4300" } }
     });
-    var aheads = [["التاريخ والوقت", 20], ["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم المرص", 18], ["الحدث", 14], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ الفحص", 15], ["ملاحظات", 40], ["بواسطة", 22]];
+    var aheads = [["التاريخ والوقت", 20], ["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم المرص", 18], ["الحدث", 14], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ الفحص", 15], ["ملاحظات", 40], ["بواسطة", 22], ["تاريخ الانتهاء", 15]];
     aheads.forEach(function (hd, i) { as.getColumn(i + 1).width = hd[1]; xlHead(as.getCell(1, i + 1), hd[0]); });
     as.getRow(1).height = 30;
     var all = [];
@@ -2244,7 +2513,7 @@ details.steps ol > li { min-width: 0; }
       var en = it.en, pIdx = -1;
       L.parts.forEach(function (p, i) { if (p.id === it.k.pid) pIdx = i; });
       var who = en.by ? (d.names.get(en.by) || "مستخدم") : "";
-      var vals3 = [xlDateTime(en.at), pIdx >= 0 ? partTitle(pIdx) : "جزء محذوف", it.k.r, it.k.c, en.l, en.t === "clear" ? "تفريغ الخلية" : "حفظ", xlDate(en.p), en.s ? WORD[en.s] : (en.t === "save" ? WORD.unchecked : ""), xlDate(en.i), en.n, who];
+      var vals3 = [xlDateTime(en.at), pIdx >= 0 ? partTitle(pIdx) : "جزء محذوف", it.k.r, it.k.c, en.l, en.t === "clear" ? "تفريغ الخلية" : "حفظ", xlDate(en.p), en.s ? WORD[en.s] : (en.t === "save" ? WORD.unchecked : ""), xlDate(en.i), en.n, who, xlDate(expOf(en.p))];
       vals3.forEach(function (v, i) {
         var cl = as.getCell(m, i + 1);
         cl.value = v === "" ? null : v;
@@ -2253,6 +2522,7 @@ details.steps ol > li { min-width: 0; }
       as.getCell(m, 1).numFmt = "dd/mm/yyyy hh:mm";
       as.getCell(m, 7).numFmt = "dd/mm/yyyy";
       as.getCell(m, 9).numFmt = "dd/mm/yyyy";
+      as.getCell(m, 12).numFmt = "dd/mm/yyyy";
       if (en.s) {
         var sc3 = as.getCell(m, 8);
         sc3.fill = xlSolid(XL[en.s].fill);
@@ -2474,6 +2744,11 @@ details.steps ol > li { min-width: 0; }
       getArchive: function (k) { return Promise.resolve((data.archive[k] || []).slice()); },
       appendArchive: function (k, e) { data.archive[k] = appendEntry(data.archive[k], e); persist(); return Promise.resolve(); },
       clearArchive: function (k) { delete data.archive[k]; persist(); return Promise.resolve(); },
+      wipeAll: function () {
+        try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-climate"); localStorage.removeItem(KEY + "-fumlog"); localStorage.removeItem(KEY + "-capa"); } catch (e) { /* ignore */ }
+        data = { layout: null, lots: {}, archive: {} };
+        return Promise.resolve();
+      },
       deleteAll: function () {
         if (!sub || sub === "1") return Promise.reject(new Error("base_warehouse"));
         try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-climate"); localStorage.removeItem(KEY + "-fumlog"); localStorage.removeItem(KEY + "-capa"); } catch (e) { /* ignore */ }
@@ -3586,6 +3861,7 @@ details.steps ol > li { min-width: 0; }
       }).join("") + "</ul>";
       if (r.lives.length > 30) h += '<p class="fine">والباقي في ملف الإكسل.</p>';
     }
+    h += expSectionHTML(false);
     box.innerHTML = h;
   }
   function exportMonthReport() {
@@ -3644,6 +3920,20 @@ details.steps ol > li { min-width: 0; }
         sc.font = { name: XL_FONT, size: 11, bold: true, color: { argb: XL[en.s].font } };
       });
       w2.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: heads.length } };
+      var xrows = expiryRows(state.lots, state.layout, todayISO());
+      if (xrows.length) {
+        var w3 = wb.addWorksheet("الصلاحية الحالية", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
+        var h3 = [["الجزء", 14], ["الصف", 8], ["العمود", 8], ["رقم / اسم المرص", 18], ["تاريخ الإنتاج", 15], ["تاريخ الانتهاء", 15], ["المتبقي (يوم)", 15], ["الحالة", 16]];
+        h3.forEach(function (hd, i) { w3.getColumn(i + 1).width = hd[1]; xlHead(w3.getCell(1, i + 1), hd[0]); });
+        w3.getRow(1).height = 30;
+        xrows.forEach(function (x, i) {
+          var n3 = i + 2, v3 = [partName(x.k.pid), x.k.r, x.k.c, x.l.label || "", xlDate(x.l.produced), xlDate(x.ex.x), x.ex.left, x.ex.st === "x" ? "منتهي" : x.ex.st === "s" ? "قرب الانتهاء" : "ساري"];
+          v3.forEach(function (v, j) { var c3 = w3.getCell(n3, j + 1); c3.value = v === "" ? null : v; xlBody(c3, false, false); });
+          w3.getCell(n3, 5).numFmt = "dd/mm/yyyy";
+          w3.getCell(n3, 6).numFmt = "dd/mm/yyyy";
+        });
+        w3.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: h3.length } };
+      }
       return wb.xlsx.writeBuffer();
     }).then(function (buf) {
       return downloadsCap.save({ filename: "monthly-report-" + (whActive === "1" ? "" : whActive + "-") + r.ym + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
@@ -3730,6 +4020,307 @@ details.steps ol > li { min-width: 0; }
   signFields($("sg-rep"));
   signFields($("sg-fl"));
   signFields($("sg-cp"));
+  signFields($("sg-hc"));
+  /* ---------- expiry date: always 2 years after the production date; computed, shown read-only, never typed or stored ---------- */
+  var EXP_YEARS = 2, EXP_SOON = 60;
+  function expOf(iso) {
+    var t = parseISO(iso);
+    if (t === null) return "";
+    var d = new Date(t), y = d.getUTCFullYear() + EXP_YEARS, m = d.getUTCMonth(), day = d.getUTCDate();
+    var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    return y + "-" + pad2(m + 1) + "-" + pad2(Math.min(day, last));
+  }
+  function expStat(left) { return left < 0 ? "x" : left <= EXP_SOON ? "s" : "ok"; }
+  function expText(left) {
+    if (left < 0) return "منتهي منذ " + daysText(-left);
+    if (left === 0) return "ينتهي اليوم";
+    if (left === 1) return "ينتهي غدًا";
+    return "ينتهي بعد " + daysText(left);
+  }
+  function expInfo(l, td) {
+    if (!l || !l.produced || lotState(l) === "empty") return null;
+    var x = expOf(l.produced), left = x ? daysBetween(td, x) : null;
+    return left === null ? null : { x: x, left: left, st: expStat(left) };
+  }
+  function withExp(c) {
+    var td = todayISO(), n = 0, x = 0, s = 0;
+    state.lots.forEach(function (l) { var e = expInfo(l, td); if (!e) return; n++; if (e.st === "x") x++; else if (e.st === "s") s++; });
+    c.expset = n; c.expired = x; c.expsoon = s;
+    return c;
+  }
+  /* occupied lots with an expiry date, earliest first */
+  function expiryRows(lots, layout, today) {
+    var out = [];
+    layout.parts.forEach(function (p) {
+      for (var r = 1; r <= p.rows; r++) {
+        for (var c = 1; c <= layout.cols; c++) {
+          var key = lotKey(p.id, r, c), l = lots.get(key), ex = expInfo(l, today);
+          if (ex) out.push({ key: key, k: { pid: p.id, r: r, c: c }, l: l, ex: ex });
+        }
+      }
+    });
+    out.sort(function (a, b) { return a.ex.left - b.ex.left || a.k.pid - b.k.pid || a.k.r - b.k.r || a.k.c - b.k.c; });
+    return out;
+  }
+  /* shelf life right now (a snapshot of the stock today, whatever month the report is for) */
+  function expSectionHTML(print) {
+    var td = todayISO(), rows = expiryRows(state.lots, state.layout, td);
+    if (!rows.length) return "";
+    var nx = rows.filter(function (x) { return x.ex.st === "x"; }).length, ns = rows.filter(function (x) { return x.ex.st === "s"; }).length;
+    var occ = 0;
+    state.lots.forEach(function (l, k) { var kk = parseKey(k); if (kk && lotState(l) !== "empty" && partName(kk.pid) !== "جزء محذوف") occ++; });
+    var none = Math.max(0, occ - rows.length), flagged = rows.filter(function (x) { return x.ex.st !== "ok"; });
+    var lab = ["منتهي الصلاحية", "قرب الانتهاء (خلال " + daysText(EXP_SOON) + ")", "سارية", "بدون تاريخ إنتاج"], vals = [nx, ns, rows.length - nx - ns, none];
+    var h;
+    if (print) {
+      var th = function (cells) { return "<tr>" + cells.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr>"; };
+      var td2 = function (cells) { return "<tr>" + cells.map(function (c) { return "<td>" + c + "</td>"; }).join("") + "</tr>"; };
+      h = "<h2>حالة الصلاحية الحالية (بتاريخ " + fmtDate(td) + ")</h2><table class=\"pr-t\">" + th(lab) + td2(vals) + "</table>";
+      if (flagged.length) {
+        h += '<table class="pr-t">' + th(["#", "المرص", "الجزء", "الصف", "العمود", "تاريخ الانتهاء", "الحالة"]) + flagged.slice(0, 100).map(function (x, i) {
+          return td2([i + 1, esc(x.l.label || "بدون اسم"), esc(partName(x.k.pid)), x.k.r, x.k.c, fmtDate(x.ex.x), expText(x.ex.left)]);
+        }).join("") + "</table>";
+        if (flagged.length > 100) h += "<p>والباقي في ملف الإكسل.</p>";
+      }
+      return h;
+    }
+    h = '<h3 class="rep-h">حالة الصلاحية الآن</h3><div class="rep-grid">' + lab.map(function (t, i) {
+      return '<div class="rep-box" data-k="' + ["live", "dead", "clean", ""][i] + '"><b>' + vals[i] + "</b><span>" + t + "</span></div>";
+    }).join("") + "</div>";
+    if (flagged.length) {
+      h += '<ul class="rep-list">' + flagged.slice(0, 15).map(function (x) {
+        return '<li data-exp="' + x.ex.st + '"><b>' + esc(x.l.label || "بدون اسم") + "</b> · " + esc(partName(x.k.pid)) + " · صف " + x.k.r + " · عمود " + x.k.c + " · " + fmtDate(x.ex.x) + " (" + expText(x.ex.left) + ")</li>";
+      }).join("") + "</ul>";
+      if (flagged.length > 15) h += '<p class="fine">والباقي في ملف الإكسل.</p>';
+    }
+    return h;
+  }
+  function paintExpForm() {
+    var x = expOf($("f-produced").value), f = $("f-expiry"), h = $("f-exp-hint");
+    h.removeAttribute("data-exp");
+    if (!x) { f.value = ""; h.textContent = "يظهر بعد إدخال تاريخ الإنتاج."; return; }
+    var left = daysBetween(todayISO(), x), st = expStat(left);
+    f.value = fmtDate(x);
+    h.textContent = expText(left);
+    if (st !== "ok") h.setAttribute("data-exp", st);
+  }
+  $("f-produced").addEventListener("input", paintExpForm);
+  $("f-produced").addEventListener("change", paintExpForm);
+  new MutationObserver(paintExpForm).observe($("dlg-lot"), { attributes: true, attributeFilter: ["open"] });
+  /* badge on each map cell that is expired or close to expiry; re-applied whenever the board is redrawn */
+  function paintExpCells() {
+    var td = todayISO();
+    [].forEach.call(elBoard.querySelectorAll(".cell[data-key]:not([data-xp])"), function (b) {
+      b.setAttribute("data-xp", "1");
+      var e = expInfo(state.lots.get(b.getAttribute("data-key")), td);
+      if (!e || e.st === "ok") return;
+      b.setAttribute("data-exp", e.st);
+      var sp = document.createElement("span");
+      sp.className = "c-exp";
+      sp.textContent = e.st === "x" ? "منتهي: " + daysText(-e.left) : "ينتهي: " + (e.left === 0 ? "اليوم" : e.left === 1 ? "غدًا" : daysText(e.left));
+      b.appendChild(sp);
+    });
+  }
+  new MutationObserver(paintExpCells).observe(elBoard, { childList: true, subtree: true });
+  paintExpCells();
+
+  /* ---------- HACCP monitoring table ----------
+     The plan texts are kept on this device and, when the app is connected to the cloud, in the warehouse's config/haccp
+     document (same pattern as the shelf-life settings). */
+  var hcConf = { rows: [], at: 0 }, hcT = null, hcClim = { state: "ok" }, hcEdit = null;
+  var HC_ICON = {
+    ok: ICON.clean,
+    warn: svgIc('<path d="M8 1.8l6.4 11.4H1.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.2v3.3M8 11.4v.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'),
+    bad: svgIc('<circle cx="8" cy="8" r="6.6" fill="currentColor"/><path d="M8 4.5v4M8 10.9v.2" fill="none" style="stroke: var(--live-bg)" stroke-width="1.8" stroke-linecap="round"/>'),
+    na: ICON.unchecked
+  };
+  function hcKey() { return "lots-haccp-v1-" + whActive; }
+  function hcWriteLocal() { try { localStorage.setItem(hcKey(), JSON.stringify(hcConf)); } catch (e) { /* not saved */ } }
+  function hcDoc() { return { rows: hcConf.rows, at: hcConf.at, by: state.myId || "" }; }
+  function hcSettings() { return { insp: inspDays, fum: FUM_DAYS, fifo: fifoDays, soon: EXP_SOON, t: CLIMATE_T, h: CLIMATE_H, fresh: 3 }; }
+  function hcClimate() { return { avail: !!(store && store.getClimate), state: hcClim.state, last: climateList.length ? climateList[climateList.length - 1] : null }; }
+  function hcEffective() { return hcRows(hcConf, hcSettings()); }
+  function hcIsOpen() { return $("dlg-haccp").open; }
+  function paintHaccpIfOpen() { if (hcIsOpen()) paintHaccp(); }
+  function hcRowHTML(r, res, can) {
+    var dl = function (k, v) { return v ? "<dt>" + k + "</dt><dd>" + esc(v) + "</dd>" : ""; };
+    var h = '<li class="hc-row" data-id="' + esc(r.id) + '" data-on="' + (r.on ? "1" : "0") + '">';
+    h += '<div class="hc-top"><b class="hc-name">' + esc(r.name) + "</b>" + (r.cls ? '<span class="hc-cls">' + esc(HC_CLS[r.cls]) + "</span>" : "") + (r.on ? "" : '<span class="hc-off">موقوف</span>') + "</div>";
+    if (res && r.on) h += '<p class="hc-stat" data-st="' + res.st + '">' + HC_ICON[res.st] + "<span><b>" + HC_STATE[res.st] + "</b> · " + esc(res.text) + "</span></p>";
+    h += '<dl class="hc-dl">' + dl("الخطر", r.hazard) + dl("الحد", r.limit) + dl("المراقبة", [r.method, r.freq].filter(Boolean).join(" · ")) + dl("المسؤول", r.who || "—") + dl("الإجراء", r.action) + dl("السجل", r.rec) + "</dl>";
+    if (can) h += '<button type="button" class="btn small" data-hc-edit="' + esc(r.id) + '">تعديل</button>';
+    return h + "</li>";
+  }
+  function paintHaccp() {
+    var S = hcSettings(), td = todayISO(), c = withExp(summarize(state.lots, state.layout)), rows = hcEffective(), clim = hcClimate();
+    var can = state.canWrite !== false && !!store, cnt = { ok: 0, warn: 0, bad: 0, na: 0 }, on = 0, customs = 0;
+    var items = rows.map(function (r) {
+      var res = r.custom ? null : hcEval(r.id, c, S, clim, td);
+      if (r.on) { on++; if (res) cnt[res.st]++; else customs++; }
+      return hcRowHTML(r, res, can);
+    });
+    $("hc-sub").textContent = "الحالة بتاريخ " + fmtDate(td);
+    $("hc-sum").innerHTML = [["clean", cnt.ok, HC_STATE.ok], ["dead", cnt.warn, HC_STATE.warn], ["live", cnt.bad, HC_STATE.bad], ["", cnt.na, HC_STATE.na]].map(function (b) {
+      return '<div class="rep-box"' + (b[0] ? ' data-k="' + b[0] + '"' : "") + "><b>" + b[1] + "</b><span>" + b[2] + "</span></div>";
+    }).join("");
+    $("hc-list").innerHTML = items.join("");
+    $("hc-note").textContent = (customs ? "البنود التي أضفتها (" + customs + ") لا تُقارن تلقائيًا. " : "") + (state.mode === "db" && state.canWrite !== false && store && store.saveConf ? "تتزامن الخطة مع كل الأجهزة المتصلة بالمزامنة." : "تُحفظ الخطة على هذا الجهاز.");
+    $("hc-print").disabled = !on;
+    $("hc-add").hidden = !can;
+    $("hc-add").disabled = rows.length >= HC_ROWS_MAX;
+    $("hc-reset").hidden = !(can && hcConf.rows.length);
+  }
+  /* a newer copy from the cloud replaces the one on this device */
+  function applyHaccp(o) {
+    if (!o || typeof o !== "object") return;
+    var n = hcClean(o);
+    if (n.at <= hcConf.at) return;
+    hcConf = n;
+    hcWriteLocal();
+    paintHaccpIfOpen();
+  }
+  function loadHaccpFromStore() {
+    if (!store || !store.getConf) return;
+    store.getConf("haccp").then(function (o) {
+      if (o) { applyHaccp(o); return; }
+      /* nothing shared yet: publish the plan that was edited on this device */
+      if (hcConf.rows.length && state.canWrite !== false) {
+        if (!hcConf.at) { hcConf.at = Date.now(); hcWriteLocal(); }
+        store.saveConf("haccp", hcDoc()).then(null, function () { /* retried on the next change */ });
+      }
+    }, function () { /* offline: keep what is on this device */ });
+  }
+  function hcCommit(rows, say) {
+    hcConf = { rows: rows, at: Date.now() };
+    hcWriteLocal();
+    paintHaccp();
+    clearTimeout(hcT);
+    if (store && store.saveConf && state.canWrite !== false) {
+      hcT = setTimeout(function () {
+        store.saveConf("haccp", hcDoc()).then(function () { toast("تم حفظ الخطة وتزامنت مع الأجهزة"); }, function (ex) { toast(writeError(ex)); });
+      }, 700);
+    } else if (say) toast(say);
+  }
+  try { hcConf = hcClean(JSON.parse(localStorage.getItem(hcKey()) || "null")); } catch (e) { hcConf = hcClean(null); }
+
+  /* the sheet that edits one point */
+  function hrGet(group, attr) { var b = $(group).querySelector('button[aria-pressed="true"]'); return b ? b.getAttribute(attr) : ""; }
+  function hrSet(group, attr, val) {
+    [].forEach.call($(group).querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute(attr) === val)); });
+  }
+  function hcNewId() { return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  function openHrow(id) {
+    var rows = hcEffective(), row = null, i;
+    for (i = 0; i < rows.length; i++) if (rows[i].id === id) row = rows[i];
+    var isNew = !row;
+    hcEdit = { id: isNew ? hcNewId() : id, custom: isNew || row.custom, isNew: isNew };
+    hideErr($("hr-err"));
+    $("hr-title").textContent = isNew ? "بند جديد" : "تعديل بند";
+    $("hr-note").textContent = isNew ? "بند خاص بك: يظهر في الجدول وفي الطباعة، ولا تُقارن حالته تلقائيًا."
+      : hcEdit.custom ? "بند أضفته أنت."
+      : "الحالة التلقائية لهذا البند تُحسب من بيانات التطبيق وإعداداته، وليس من النص المكتوب هنا. لو فضّيت خانة يرجع نصها الافتراضي.";
+    HC_FIELDS.forEach(function (k) { $("hr-" + k).value = row ? row[k] : ""; });
+    hrSet("hr-cls", "data-cls", row ? row.cls : "");
+    hrSet("hr-on", "data-on", row && !row.on ? "0" : "1");
+    $("hr-default").hidden = hcEdit.custom;
+    $("hr-del").hidden = !hcEdit.custom || isNew;
+    disarm($("hr-del"), "حذف البند");
+    openDlg($("dlg-hrow"));
+  }
+  function saveHrow() {
+    var v = {}, rows = hcConf.rows.slice(), i, at = -1;
+    HC_FIELDS.forEach(function (k) { v[k] = hcClip($("hr-" + k).value, HC_MAX[k]); });
+    if (hcEdit.custom && !v.name) { showErr($("hr-err"), "اكتب اسم نقطة المراقبة."); $("hr-name").focus(); return; }
+    var entry = { id: hcEdit.id, on: hrGet("hr-on", "data-on") !== "0", cls: hrGet("hr-cls", "data-cls"), f: {} }, d = hcEdit.custom ? null : hcDefault(hcEdit.id, hcSettings());
+    HC_FIELDS.forEach(function (k) { if (v[k] && (!d || v[k] !== d[k])) entry.f[k] = v[k]; });
+    for (i = 0; i < rows.length; i++) if (rows[i].id === hcEdit.id) at = i;
+    var plain = !hcEdit.custom && entry.on && !entry.cls && !Object.keys(entry.f).length;
+    if (at >= 0) { if (plain) rows.splice(at, 1); else rows[at] = entry; } else if (!plain) rows.push(entry);
+    closeDlg($("dlg-hrow"));
+    hcCommit(rows, "تم حفظ البند على هذا الجهاز");
+  }
+  $("hr-save").addEventListener("click", saveHrow);
+  $("hr-close").addEventListener("click", function () { closeDlg($("dlg-hrow")); });
+  $("hr-default").addEventListener("click", function () {
+    var d = hcDefault(hcEdit.id, hcSettings());
+    HC_FIELDS.forEach(function (k) { $("hr-" + k).value = d[k]; });
+    hideErr($("hr-err"));
+  });
+  $("hr-del").addEventListener("click", function () {
+    var b = $("hr-del");
+    if (b.getAttribute("data-armed") !== "1") { arm(b, "اضغط مرة أخرى للحذف", "حذف البند"); return; }
+    disarm(b, "حذف البند");
+    var id = hcEdit.id;
+    closeDlg($("dlg-hrow"));
+    hcCommit(hcConf.rows.filter(function (r) { return r.id !== id; }), "تم حذف البند");
+  });
+  $("hr-cls").addEventListener("click", function (e) { var b = e.target.closest ? e.target.closest("button[data-cls]") : null; if (b) hrSet("hr-cls", "data-cls", b.getAttribute("data-cls")); });
+  $("hr-on").addEventListener("click", function (e) { var b = e.target.closest ? e.target.closest("button[data-on]") : null; if (b) hrSet("hr-on", "data-on", b.getAttribute("data-on")); });
+  $("dlg-hrow").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && e.target && e.target.tagName === "INPUT") { e.preventDefault(); saveHrow(); }
+  });
+
+  /* the main sheet */
+  $("btn-haccp").addEventListener("click", function () {
+    var can = !!(store && store.getClimate);
+    hcClim.state = can ? "loading" : "ok";
+    paintHaccp();
+    fillSign($("sg-hc"));
+    openDlg($("dlg-haccp"));
+    if (can) store.getClimate(climateFrom()).then(function (list) { setClimate(list); hcClim.state = "ok"; paintHaccpIfOpen(); }, function () { hcClim.state = "fail"; paintHaccpIfOpen(); });
+    if (store && store.getConf) store.getConf("haccp").then(applyHaccp, function () { /* offline */ });
+  });
+  $("hc-close").addEventListener("click", function () { closeDlg($("dlg-haccp")); });
+  $("hc-list").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button[data-hc-edit]") : null;
+    if (b) openHrow(b.getAttribute("data-hc-edit"));
+  });
+  $("hc-add").addEventListener("click", function () { openHrow(null); });
+  $("hc-reset").addEventListener("click", function () {
+    var b = $("hc-reset");
+    if (b.getAttribute("data-armed") !== "1") { arm(b, "اضغط مرة أخرى للتأكيد", "استعادة الخطة الافتراضية"); return; }
+    disarm(b, "استعادة الخطة الافتراضية");
+    hcCommit([], "تمت استعادة الخطة الافتراضية");
+  });
+  $("hc-print").addEventListener("click", printHaccp);
+  /* printed on A4 landscape: the table is wide */
+  function printHaccp() {
+    var S = hcSettings(), td = todayISO(), c = withExp(summarize(state.lots, state.layout)), clim = hcClimate();
+    var rows = hcEffective().filter(function (r) { return r.on; });
+    if (!rows.length) { toast("لا توجد بنود مفعّلة للطباعة."); return; }
+    var logo = document.querySelector(".brand img"), wn = whNameOf(whActive) || state.layout.name || "المخزن";
+    var cols = [["م", 3], ["نقطة المراقبة", 13], ["الحد المقبول", 14], ["طريقة المراقبة", 14], ["التكرار", 8], ["المسؤول", 8], ["الإجراء التصحيحي", 16], ["السجل", 8], ["التصنيف", 5], ["الحالة بتاريخ " + fmtDate(td), 11]];
+    var h = "<style>@page { size: A4 landscape; margin: 12mm; }</style>";
+    h += '<div class="pr-head">' + (logo ? '<img src="' + logo.src + '" alt="">' : "") + "<div><h1>جدول مراقبة الهاسب</h1><p>المخزن: " + esc(wn) + " · تاريخ الإصدار: " + fmtDate(td) + "</p></div></div>";
+    h += '<table class="pr-t hc-pt"><colgroup>' + cols.map(function (x) { return '<col style="width:' + x[1] + '%">'; }).join("") + "</colgroup><thead><tr>" + cols.map(function (x) { return "<th>" + esc(x[0]) + "</th>"; }).join("") + "</tr></thead><tbody>";
+    rows.forEach(function (r, i) {
+      var res = r.custom ? null : hcEval(r.id, c, S, clim, td);
+      h += "<tr><td>" + (i + 1) + "</td><td><b>" + esc(r.name) + "</b>" + (r.hazard ? "<br>" + esc(r.hazard) : "") + "</td><td>" + esc(r.limit) + "</td><td>" + esc(r.method) + "</td><td>" + esc(r.freq) + "</td><td>" + esc(r.who) + "</td><td>" + esc(r.action) + "</td><td>" + esc(r.rec) + "</td><td>" + (r.cls ? esc(HC_CLS[r.cls]) : "") + "</td><td>" + (res ? "<b>" + HC_STATE[res.st] + "</b><br>" + esc(res.text) : "—") + "</td></tr>";
+    });
+    h += "</tbody></table>";
+    h += '<p class="pr-note">الحالة تُحسب تلقائيًا من بيانات التطبيق بتاريخ الطباعة، والبنود التي بلا حالة تُراقب يدويًا. تصنيف النقاط (CCP / OPRP / PRP) يقرره فريق الهاسب.</p>';
+    h += signHTML() + '<p class="pr-foot">أُعدّ من نظام فحص المخزون · ' + fmtDate(td) + "</p>";
+    $("print-area").innerHTML = h;
+    window.print();
+  }
+  /* wipe all data of the current warehouse (typed confirmation), then reload to a clean start */
+  $("m-wipe").addEventListener("click", function () {
+    var er = $("m-wipe-err"), btn = $("m-wipe");
+    hideErr(er);
+    if (!store || !store.wipeAll || state.canWrite === false) { showErr(er, "غير متاح الآن."); return; }
+    var nm = cleanWhName(whNameOf(whActive) || state.layout.name || "المخزن");
+    var typed = window.prompt("سيتم حذف كل بيانات «" + nm + "» نهائيًا (" + lotsText(state.lots.size) + " مسجّل) مع الأرشيف والتبخير والإجراءات والقراءات والإعدادات، ويرجع البرنامج من الصفر.\nصدّر نسخة إكسل قبل الحذف لو محتاجها.\nاكتب كلمة «حذف» للتأكيد:");
+    if (typed === null) return;
+    if (typed.trim() !== "حذف") { showErr(er, "الكلمة غير مطابقة. لم يتم الحذف."); return; }
+    btn.disabled = true;
+    store.wipeAll().then(function () {
+      try {
+        [FIFO_KEY, INSP_KEY, hcKey()].concat(SIGN_KEYS).forEach(function (k) { localStorage.removeItem(k); });
+        Object.keys(localStorage).forEach(function (k) { if (k.indexOf("lots-rep-notes-" + whActive + "-") === 0) localStorage.removeItem(k); });
+      } catch (e) { /* ignore */ }
+      location.reload();
+    }, function (ex) { btn.disabled = false; showErr(er, writeError(ex)); });
+  });
   function repNotesKey() { return "lots-rep-notes-" + whActive + "-" + $("rep-month").value; }
   function loadRepNotes() {
     var v = "";
@@ -3763,6 +4354,7 @@ details.steps ol > li { min-width: 0; }
         return td([i + 1, esc(it.en.l || "بدون اسم"), esc(partName(k ? k.pid : "")), k ? k.r : "", k ? k.c : "", fmtDate(it.en.i), esc(it.en.n)]);
       }).join("") + "</table>";
     } else h += "<p>لا توجد مرصات بنشاط حي في هذا الشهر.</p>";
+    h += expSectionHTML(true);
     var nt = ($("rep-notes").value || "").trim();
     h += "<h2>ملاحظات وإجراءات تصحيحية</h2>" + (nt ? '<p class="pr-notes">' + esc(nt).replace(/\n/g, "<br>") + "</p>" : '<div class="pr-lines"><div></div><div></div><div></div><div></div></div>');
     h += signHTML();
@@ -3798,7 +4390,9 @@ details.steps ol > li { min-width: 0; }
     box.hidden = !fu;
     $("fum-add").hidden = !(checkedStatus() === "live" && !!editing && state.canWrite !== false && !!store && !!store.addFum);
     $("capa-add").hidden = !(checkedStatus() === "live" && !!editing && state.canWrite !== false && !!store && !!store.addCapa);
-    if (fu) { var lk = editing ? fumLock(editing.key, state.lots.get(editing.key), todayISO()) : null; box.setAttribute("data-tone", fu.re ? "re" : "fum"); box.textContent = fumText(fu) + (lk ? " حالة النشاط الحشري مقفولة حتى " + fmtDate(lk.until) + "." : ""); }
+    if (fu) { var lk = editing ? fumLock(editing.key, state.lots.get(editing.key), todayISO()) : null; box.setAttribute("data-tone", fu.re ? "re" : "fum"); box.textContent = fumText(fu) + (lk ? " حالة النشاط الحشري واسم المرص وتاريخ إنتاجه مقفولة حتى " + fmtDate(lk.until) + "." : ""); }
+    var lock2 = editing ? fumLock(editing.key, state.lots.get(editing.key), todayISO()) : null;
+    $("f-label").disabled = !!lock2; $("f-produced").disabled = !!lock2;
   }
   $("f-inspected").addEventListener("input", paintFum);
   $("seg").addEventListener("change", paintFum);
@@ -3820,12 +4414,12 @@ details.steps ol > li { min-width: 0; }
         wb.creator = "نظام الجودة";
         wb.created = new Date();
         var ws = wb.addWorksheet("أرشيف الخلية", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
-        var heads = [["التاريخ والوقت", 20], ["الحدث", 14], ["رقم / اسم المرص", 18], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ الفحص", 15], ["ملاحظات", 40], ["بواسطة", 16]];
+        var heads = [["التاريخ والوقت", 20], ["الحدث", 14], ["رقم / اسم المرص", 18], ["تاريخ الإنتاج", 15], ["الحالة", 14], ["تاريخ الفحص", 15], ["ملاحظات", 40], ["بواسطة", 16], ["تاريخ الانتهاء", 15]];
         heads.forEach(function (h, i) { ws.getColumn(i + 1).width = h[1]; xlHead(ws.getCell(1, i + 1), h[0]); });
         ws.getRow(1).height = 30;
         rows.forEach(function (en, ri) {
           var n = ri + 2, who = en.by ? (names.get(en.by) || "مستخدم") : "";
-          var vals = [xlDateTime(en.at), en.t === "clear" ? "تفريغ الخلية" : "حفظ", en.l, xlDate(en.p), en.s ? WORD[en.s] : (en.t === "save" ? WORD.unchecked : ""), xlDate(en.i), en.n, who];
+          var vals = [xlDateTime(en.at), en.t === "clear" ? "تفريغ الخلية" : "حفظ", en.l, xlDate(en.p), en.s ? WORD[en.s] : (en.t === "save" ? WORD.unchecked : ""), xlDate(en.i), en.n, who, xlDate(expOf(en.p))];
           vals.forEach(function (v, i) {
             var cl = ws.getCell(n, i + 1);
             cl.value = v === "" ? null : v;
@@ -3834,6 +4428,7 @@ details.steps ol > li { min-width: 0; }
           ws.getCell(n, 1).numFmt = "dd/mm/yyyy hh:mm";
           ws.getCell(n, 4).numFmt = "dd/mm/yyyy";
           ws.getCell(n, 6).numFmt = "dd/mm/yyyy";
+          ws.getCell(n, 9).numFmt = "dd/mm/yyyy";
           if (en.s) {
             var sc = ws.getCell(n, 5);
             sc.fill = xlSolid(XL[en.s].fill);
@@ -3960,6 +4555,7 @@ details.steps ol > li { min-width: 0; }
     if (S.cleanupOld) S.cleanupOld();
     try { if (Date.now() - parseInt(localStorage.getItem("lots-rotated") || "0", 10) < 120000) setTimeout(function () { $("btn-sync").click(); }, 900); } catch (e) { /* ignore */ }
     if (store.getClimate) store.getClimate(climateFrom()).then(setClimate, function () { /* later */ });
+    loadHaccpFromStore();
     if (store.listCapa) capaLoad().then(function () { cpLoaded = true; render(); }, function () { /* later */ });
     if (store.getHub) store.getHub().then(function (h) { whList = normalizeHub(h); if (!whList.some(function (w) { return w.id === whActive; })) { switchWh("1"); return; } render(); }, function () { /* names load later */ });
   }
