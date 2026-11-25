@@ -317,7 +317,18 @@ textarea { min-height: 84px; resize: vertical; }
 .rep-list li[data-exp="s"] { border-color: var(--dead-line); background: var(--dead-bg); color: var(--dead-fg); }
 .rep-list li[data-exp="x"] { border-color: var(--live-line); background: var(--live-bg); color: var(--live-fg); }
 #btn-haccp { color: #0d9488; }
-#f-expiry { background: var(--sunken); color: var(--ink); cursor: default; }
+#f-expiry, #fm-days { background: var(--sunken); color: var(--ink); cursor: default; }
+input.dmy { direction: ltr; text-align: right; cursor: pointer; padding-left: 42px; background-repeat: no-repeat; background-position: left 12px center; background-size: 20px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15' rx='2.5'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E") ; }
+input.dmy:disabled { cursor: default; background-image: none; }
+.cal-nav { display: flex; align-items: center; gap: 8px; margin: 12px 0 8px; }
+.cal-nav select { flex: 1; min-width: 0; height: 44px; padding: 0 10px; border: 1.5px solid var(--line, #cbd5e1); border-radius: 10px; background: var(--surface, #fff); color: var(--ink); font: inherit; }
+.cal-nav .icon-btn:disabled { opacity: .35; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; direction: rtl; margin-bottom: 12px; }
+.cal-grid b { text-align: center; font-size: 13px; font-weight: 600; color: var(--muted, #64748b); padding: 4px 0; }
+.cal-grid button { height: 42px; border: 1.5px solid transparent; border-radius: 10px; background: var(--sunken); color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; }
+.cal-grid button[data-today] { border-color: var(--accent); }
+.cal-grid button[data-sel] { background: var(--accent); color: #fff; }
+.cal-grid button:disabled { opacity: .35; cursor: default; }
 /* frame around the whole interface (not printed) */
 body::after { content: ""; position: fixed; inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); border: 3px solid var(--accent); pointer-events: none; z-index: 20; }
 @media print { body::after { display: none; } }
@@ -716,11 +727,31 @@ details.steps ol > li { min-width: 0; }
       <div class="field"><label for="fm-d">تاريخ بدء التبخير</label><input id="fm-d" type="date"></div>
       <div class="field"><label for="fm-mat">المادة / الطريقة</label><input id="fm-mat" type="text" maxlength="60" placeholder="مثال: فوسفين"></div>
       <div class="field"><label for="fm-dose">الجرعة</label><input id="fm-dose" type="text" maxlength="60" placeholder="كما في إجراءاتكم المعتمدة"></div>
-      <div class="field"><label for="fm-days">مدة التعريض (يوم)</label><input id="fm-days" type="number" inputmode="numeric" min="1" max="60"></div>
+      <div class="field"><label for="fm-days">مدة التعريض (يوم) · ثابتة، نفس مدة إغلاق الإجراء التصحيحي</label><input id="fm-days" type="number" inputmode="numeric" value="5" readonly tabindex="-1" aria-readonly="true"></div>
       <div class="field"><label for="fm-who">المسؤول عن التنفيذ</label><input id="fm-who" type="text" maxlength="40"></div>
       <div class="field"><label for="fm-note">ملاحظات</label><textarea id="fm-note" rows="2" maxlength="300"></textarea></div>
       <p class="err" id="fm-err" role="alert" hidden></p>
       <div class="actions"><button type="button" class="btn primary" id="fm-save">حفظ العملية</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-cal" class="sheet" aria-labelledby="cal-title">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="cal-title" tabindex="-1">اختر التاريخ</h2>
+        <button type="button" class="icon-btn" id="cal-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="cal-nav">
+        <button type="button" class="icon-btn" id="cal-prev" aria-label="الشهر السابق"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <select id="cal-m" aria-label="الشهر"></select>
+        <select id="cal-y" aria-label="السنة"></select>
+        <button type="button" class="icon-btn" id="cal-next" aria-label="الشهر التالي"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="cal-today">اليوم</button>
+        <button type="button" class="btn" id="cal-clear">مسح التاريخ</button>
+      </div>
     </div>
   </dialog>
 
@@ -839,6 +870,7 @@ details.steps ol > li { min-width: 0; }
       <div class="actions">
         <button type="button" class="btn primary" id="rep-xl" disabled>تصدير التقرير (إكسل)</button>
         <button type="button" class="btn" id="rep-print">طباعة / حفظ PDF</button>
+        <button type="button" class="btn" id="rep-audit">ملف المراجعة (PDF)</button>
       </div>
     </div>
   </dialog>
@@ -3185,7 +3217,7 @@ details.steps ol > li { min-width: 0; }
       });
     }).then(function (buf) {
       var blob = new Blob([buf], { type: XLSX_MIME });
-      return downloadsCap.save({ filename: "warehouse-lots-" + (whActive === "1" ? "" : whActive + "-") + todayISO() + ".xlsx", data: blob });
+      return downloadsCap.save({ filename: "warehouse-lots-" + (whActive === "1" ? "" : whActive + "-") + fileStamp() + ".xlsx", data: blob });
     }).then(function () {
       toast("تم حفظ ملف الإكسل");
     }, function (ex) {
@@ -3342,7 +3374,7 @@ details.steps ol > li { min-width: 0; }
       ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: heads.length } };
       return wb.xlsx.writeBuffer();
     }).then(function (buf) {
-      return downloadsCap.save({ filename: "corrective-actions-" + (whActive === "1" ? "" : whActive + "-") + todayISO() + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
+      return downloadsCap.save({ filename: "corrective-actions-" + (whActive === "1" ? "" : whActive + "-") + fileStamp() + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
     }).then(function () { toast("تم حفظ ملف الإكسل"); }, function (ex) {
       if (ex && ex.code === "declined") return;
       toast(ex && ex.message === "exceljs_load" ? "تعذّر تحميل مكتبة الإكسل. تحقق من الاتصال وحاول مرة أخرى." : "تعذّر تجهيز الملف. حاول مرة أخرى.");
@@ -3442,7 +3474,7 @@ details.steps ol > li { min-width: 0; }
     var k = parseKey(editing.key), lab = cleanTxt($("f-label").value, 24);
     $("fm-lot").textContent = (lab || "بدون اسم") + (k ? " — " + partName(k.pid) + " · صف " + k.r + " · عمود " + k.c : "");
     $("fm-d").value = todayISO();
-    $("fm-days").value = FUM_DAYS;
+    $("fm-days").value = CAPA_DAYS;
     $("fm-who").value = state.myId || "";
     $("fm-mat").value = "";
     $("fm-dose").value = "";
@@ -3451,7 +3483,7 @@ details.steps ol > li { min-width: 0; }
     openDlg($("dlg-fum"));
   });
   $("fm-save").addEventListener("click", function () {
-    var d = $("fm-d").value, mat = cleanTxt($("fm-mat").value, 60), days = parseInt($("fm-days").value, 10), btn = $("fm-save");
+    var d = $("fm-d").value, mat = cleanTxt($("fm-mat").value, 60), days = CAPA_DAYS, btn = $("fm-save");
     hideErr($("fm-err"));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || parseISO(d) === null || d > todayISO()) { showErr($("fm-err"), "اختر تاريخًا صحيحًا لا يكون في المستقبل."); return; }
     if (!mat) { showErr($("fm-err"), "اكتب المادة أو الطريقة."); return; }
@@ -3487,7 +3519,7 @@ details.steps ol > li { min-width: 0; }
       ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: heads.length } };
       return wb.xlsx.writeBuffer();
     }).then(function (buf) {
-      return downloadsCap.save({ filename: "fumigation-log-" + (whActive === "1" ? "" : whActive + "-") + todayISO() + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
+      return downloadsCap.save({ filename: "fumigation-log-" + (whActive === "1" ? "" : whActive + "-") + fileStamp() + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
     }).then(function () {
       toast("تم حفظ ملف الإكسل");
     }, function (ex) {
@@ -3936,7 +3968,7 @@ details.steps ol > li { min-width: 0; }
       }
       return wb.xlsx.writeBuffer();
     }).then(function (buf) {
-      return downloadsCap.save({ filename: "monthly-report-" + (whActive === "1" ? "" : whActive + "-") + r.ym + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
+      return downloadsCap.save({ filename: "monthly-report-" + (whActive === "1" ? "" : whActive + "-") + r.ym.slice(5) + "-" + r.ym.slice(0, 4) + ".xlsx", data: new Blob([buf], { type: XLSX_MIME }) });
     }).then(function () {
       toast("تم حفظ ملف الإكسل");
     }, function (ex) {
@@ -4321,6 +4353,152 @@ details.steps ol > li { min-width: 0; }
       location.reload();
     }, function (ex) { btn.disabled = false; showErr(er, writeError(ex)); });
   });
+  /* ---------- ready audit file: one printable document with the records of the chosen month ---------- */
+  function auditCapture(fn) {
+    var area = $("print-area"), keep = area.innerHTML, realPrint = window.print, realToast = toast, got = "";
+    window.print = function () { got = area.innerHTML; };
+    toast = function () {};
+    try { fn(); } catch (e) { got = ""; }
+    window.print = realPrint;
+    toast = realToast;
+    area.innerHTML = keep;
+    return got.replace(/<style>[\s\S]*?<\/style>/g, "");
+  }
+  function inMonth(iso, ym) { return typeof iso === "string" && iso.slice(0, 7) === ym; }
+  function auditHead(title, sub) {
+    var logo = document.querySelector(".brand img"), wn = whNameOf(whActive) || state.layout.name || "المخزن";
+    return '<div class="pr-head">' + (logo ? '<img src="' + logo.src + '" alt="">' : "") + "<div><h1>" + title + "</h1><p>المخزن: " + esc(wn) + " · " + sub + "</p></div></div>";
+  }
+  function auditTable(heads, rows) {
+    return '<table class="pr-t"><tr>' + heads.map(function (x) { return "<th>" + x + "</th>"; }).join("") + "</tr>" + rows.map(function (r) {
+      return "<tr>" + r.map(function (v) { return "<td>" + esc(String(v == null ? "" : v)) + "</td>"; }).join("") + "</tr>";
+    }).join("") + "</table>";
+  }
+  function auditFum(ym) {
+    var keep = flList;
+    flList = keep.filter(function (r) { return inMonth(r.d, ym); });
+    try { return auditCapture(printFumLog); } finally { flList = keep; }
+  }
+  function auditCapa(ym, sub) {
+    var keep = cpList;
+    cpList = keep.filter(function (r) { return inMonth(r.dd, ym); });
+    try {
+      if (!cpList.length) return "";
+      var rows = capaRows().slice(0, 300).map(function (r) { return [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] + (r[9] ? " · " + r[9] : ""), r[10] || ""]; });
+      return auditHead("سجل الإجراءات التصحيحية وقرارات الإفراج", sub) + auditTable(["تاريخ الانحراف", "المرص", "الموقع", "الانحراف", "الإجراء التصحيحي", "المسؤول", "الموعد", "الحالة", "الإغلاق", "قرار الإفراج"], rows) + signHTML();
+    } finally { cpList = keep; }
+  }
+  function auditClimate(ym, sub) {
+    var L = climateList.filter(function (r) { return inMonth(r.d, ym); });
+    if (!L.length) return "";
+    var tmax = Math.max.apply(null, L.map(function (r) { return r.t; })), hmax = Math.max.apply(null, L.map(function (r) { return r.h; })), over = L.filter(climateRisky).length;
+    return auditHead("سجل الحرارة والرطوبة", sub) +
+      auditTable(["عدد القراءات", "أعلى حرارة (°م)", "أعلى رطوبة (%)", "أيام فوق الحد (" + CLIMATE_T + "°م و" + CLIMATE_H + "% فأكثر)"], [[L.length, tmax, hmax, over]]) +
+      auditTable(["التاريخ", "الحرارة (°م)", "الرطوبة (%)", "الحالة"], L.map(function (r) { return [fmtDate(r.d), r.t, r.h, climateRisky(r) ? "فوق الحد" : "طبيعي"]; })) + signHTML();
+  }
+  $("rep-audit").addEventListener("click", function () {
+    var btn = $("rep-audit"), ym = (repData && repData.ym) || todayISO().slice(0, 7), loads = [];
+    btn.disabled = true;
+    if (store && store.listFum) loads.push(loadFumLog().catch(function () { /* use what is loaded */ }));
+    if (store && store.listCapa) loads.push(capaLoad().catch(function () { /* use what is loaded */ }));
+    Promise.all(loads).then(function () {
+      var sub = "الشهر: " + ym.slice(5) + "/" + ym.slice(0, 4) + " · تاريخ الإصدار: " + fmtDate(todayISO());
+      var secs = [
+        ["تقرير الفحص الشهري لنشاط الحشرات", auditCapture(printReport)],
+        ["جدول مراقبة الهاسب (الحالة بتاريخ الطباعة)", auditCapture(printHaccp)],
+        ["سجل عمليات التبخير", auditFum(ym)],
+        ["سجل الإجراءات التصحيحية وقرارات الإفراج", auditCapa(ym, sub)],
+        ["سجل الحرارة والرطوبة", auditClimate(ym, sub)]
+      ];
+      var h = '<style>@page { size: A4 landscape; margin: 12mm; } .au-sec { break-after: page; page-break-after: always; } .au-sec:last-child { break-after: auto; page-break-after: auto; }</style>';
+      h += '<section class="au-sec">' + auditHead("ملف المراجعة", sub) + "<h2>محتويات الملف</h2>" +
+        auditTable(["م", "المستند", "الحالة"], secs.map(function (x, i) { return [i + 1, x[0], x[1] ? "مرفق" : "لا توجد سجلات لهذا الشهر"]; })) +
+        signHTML() + '<p class="pr-foot">أُعدّ من نظام فحص المخزون · ' + fmtDate(todayISO()) + "</p></section>";
+      secs.forEach(function (x) { if (x[1]) h += '<section class="au-sec">' + x[1] + "</section>"; });
+      $("print-area").innerHTML = h;
+      window.print();
+    }).then(function () { btn.disabled = false; }, function () { btn.disabled = false; toast("تعذّر تجهيز الملف. حاول مرة أخرى."); });
+  });
+  /* ---------- dates: shown day/month/year and chosen from a calendar (the stored value stays yyyy-mm-dd) ---------- */
+  function fileStamp() { var t = todayISO(); return t.slice(8) + "-" + t.slice(5, 7) + "-" + t.slice(0, 4); }
+  var calEl = null, calY = 0, calM = 0;
+  var CAL_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  function calYears(from) {
+    var ty = +todayISO().slice(0, 4), o = "";
+    for (var y = ty; y >= Math.min(ty - 10, from); y--) o += '<option value="' + y + '">' + y + "</option>";
+    $("cal-y").innerHTML = o;
+  }
+  function calPaint() {
+    var td = todayISO(), ty = +td.slice(0, 4), tm = +td.slice(5, 7) - 1, cur = calEl ? calEl.value : "";
+    if (calY > ty) calY = ty;
+    if (calY === ty && calM > tm) calM = tm;
+    var off = (new Date(Date.UTC(calY, calM, 1)).getUTCDay() + 1) % 7, n = new Date(Date.UTC(calY, calM + 1, 0)).getUTCDate();
+    var h = ["س", "ح", "ن", "ث", "ر", "خ", "ج"].map(function (x) { return "<b>" + x + "</b>"; }).join("");
+    for (var i = 0; i < off; i++) h += "<span></span>";
+    for (var d = 1; d <= n; d++) {
+      var iso = calY + "-" + pad2(calM + 1) + "-" + pad2(d);
+      h += '<button type="button" data-d="' + iso + '"' + (iso === cur ? " data-sel" : "") + (iso === td ? " data-today" : "") + (iso > td ? " disabled" : "") + ">" + d + "</button>";
+    }
+    $("cal-grid").innerHTML = h;
+    if (!$("cal-y").querySelector('option[value="' + calY + '"]')) calYears(calY);
+    $("cal-m").value = calM;
+    $("cal-y").value = calY;
+    $("cal-next").disabled = calY === ty && calM >= tm;
+  }
+  function calOpen(el) {
+    if (el.disabled) return;
+    var t = /^(\d{4})-(\d{2})-/.exec(el.value) || /^(\d{4})-(\d{2})-/.exec(todayISO()), lb = document.querySelector('label[for="' + el.id + '"]');
+    calEl = el; calY = +t[1]; calM = +t[2] - 1;
+    $("cal-title").textContent = lb ? lb.textContent.replace(/\s*\(.*?\)\s*$/, "").trim() : "اختر التاريخ";
+    calYears(calY);
+    calPaint();
+    openDlg($("dlg-cal"));
+  }
+  function calPick(iso) {
+    var el = calEl;
+    closeDlg($("dlg-cal"));
+    if (!el) return;
+    el.value = iso;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  (function () {
+    var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    function shown(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; }
+    function toIso(txt) {
+      var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(txt || "");
+      return m ? m[3] + "-" + m[2] + "-" + m[1] : /^\d{4}-\d{2}-\d{2}$/.test(txt || "") ? txt : "";
+    }
+    $("cal-m").innerHTML = CAL_MONTHS.map(function (m, i) { return '<option value="' + i + '">' + m + "</option>"; }).join("");
+    ["f-produced", "f-inspected", "cf-dd", "cf-due", "fm-d", "cl-date"].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      var cur = desc.get.call(el);
+      el.type = "text";
+      el.setAttribute("readonly", "");
+      el.setAttribute("inputmode", "none");
+      el.setAttribute("placeholder", "اختر التاريخ");
+      el.setAttribute("autocomplete", "off");
+      el.classList.add("dmy");
+      Object.defineProperty(el, "value", {
+        configurable: true,
+        get: function () { return toIso(desc.get.call(this)); },
+        set: function (v) { desc.set.call(this, shown(v)); }
+      });
+      if (cur) desc.set.call(el, shown(cur));
+      el.addEventListener("click", function () { calOpen(el); });
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); calOpen(el); } });
+    });
+    $("cal-grid").addEventListener("click", function (e) { var b = e.target.closest("button[data-d]"); if (b && !b.disabled) calPick(b.getAttribute("data-d")); });
+    $("cal-m").addEventListener("change", function () { calM = +this.value; calPaint(); });
+    $("cal-y").addEventListener("change", function () { calY = +this.value; calPaint(); });
+    $("cal-prev").addEventListener("click", function () { if (--calM < 0) { calM = 11; calY--; } calPaint(); });
+    $("cal-next").addEventListener("click", function () { if (++calM > 11) { calM = 0; calY++; } calPaint(); });
+    $("cal-today").addEventListener("click", function () { calPick(todayISO()); });
+    $("cal-clear").addEventListener("click", function () { calPick(""); });
+    $("cal-close").addEventListener("click", function () { closeDlg($("dlg-cal")); });
+    $("dlg-cal").addEventListener("click", function (e) { if (e.target === $("dlg-cal")) closeDlg($("dlg-cal")); });
+  })();
   function repNotesKey() { return "lots-rep-notes-" + whActive + "-" + $("rep-month").value; }
   function loadRepNotes() {
     var v = "";
@@ -4439,7 +4617,7 @@ details.steps ol > li { min-width: 0; }
         return wb.xlsx.writeBuffer();
       });
     }).then(function (buf) {
-      var name = "archive-" + (k ? "part" + k.pid + "-row" + k.r + "-col" + k.c : "cell") + "-" + todayISO() + ".xlsx";
+      var name = "archive-" + (k ? "part" + k.pid + "-row" + k.r + "-col" + k.c : "cell") + "-" + fileStamp() + ".xlsx";
       return downloadsCap.save({ filename: name, data: new Blob([buf], { type: XLSX_MIME }) });
     }).then(function () {
       toast("تم حفظ ملف الإكسل");
