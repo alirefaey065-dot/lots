@@ -1034,7 +1034,7 @@ details.steps ol > li { min-width: 0; }
         <div class="field">
           <p class="lbl">حذف كل البيانات</p>
           <button type="button" class="btn small danger" id="m-wipe">حذف كل بيانات المخزن والبدء من الصفر</button>
-          <p class="hint">يمسح كل المرصات والأرشيف وسجل التبخير والإجراءات التصحيحية وقرارات الإفراج وقراءات الحرارة والإعدادات وخطة الهاسب للمخزن الحالي، ويرجع البرنامج فاضيًا بآخر تحديثاته. لا يمكن التراجع، وفي وضع المزامنة بيتمسح على كل الأجهزة. صدّر نسخة إكسل قبلها لو محتاج.</p>
+          <p class="hint">يمسح كل المرصات والأرشيف وسجل التبخير والإجراءات التصحيحية وقرارات الإفراج وقراءات الحرارة وخطة الهاسب للمخزن المفتوح فقط، وباقي المخازن لا تتأثر، ويرجع البرنامج فاضيًا بآخر تحديثاته. لا يمكن التراجع، وفي وضع المزامنة بيتمسح على كل الأجهزة. صدّر نسخة إكسل قبلها لو محتاج.</p>
           <p class="err" id="m-wipe-err" role="alert" hidden></p>
         </div>
         <p class="fine" id="m-ver"></p>
@@ -1463,7 +1463,7 @@ details.steps ol > li { min-width: 0; }
           ["lots", "entries", "config", "climate", "fumlog", "capa"].forEach(function (name) {
             seq = seq.then(function () {
               return getDocsSmart(x, col(x, name)).then(function (sn) {
-                var docs = sn.docs, s2 = Promise.resolve();
+                var docs = sn.docs.filter(function (d) { return !(name === "config" && d.id === "hub"); }), s2 = Promise.resolve();
                 for (var i = 0; i < docs.length; i += 100) (function (part) {
                   s2 = s2.then(function () { return Promise.all(part.map(function (d) { return settleWrite(x.F.deleteDoc(d.ref)); })); });
                 })(docs.slice(i, i + 100));
@@ -2267,6 +2267,7 @@ details.steps ol > li { min-width: 0; }
   var HC_MAX = { name: 60, hazard: 120, limit: 160, method: 160, freq: 60, who: 60, action: 200, rec: 100 };
   var HC_ROWS_MAX = 30;
   var HC_STATE = { ok: "ملتزم", warn: "يحتاج متابعة", bad: "خارج الحد", na: "بدون بيانات" };
+  var HC_SUM = { ok: "بنود ملتزمة", warn: "بنود تحتاج متابعة", bad: "بنود خارج الحد", na: "بنود بدون بيانات" };
   /* default texts of the built-in points; the numbers follow the settings in force when the text is read (S) */
   function hcDefault(id, S) {
     var d = {
@@ -4192,7 +4193,7 @@ details.steps ol > li { min-width: 0; }
       return hcRowHTML(r, res, can);
     });
     $("hc-sub").textContent = "الحالة بتاريخ " + fmtDate(td);
-    $("hc-sum").innerHTML = [["clean", cnt.ok, HC_STATE.ok], ["dead", cnt.warn, HC_STATE.warn], ["live", cnt.bad, HC_STATE.bad], ["", cnt.na, HC_STATE.na]].map(function (b) {
+    $("hc-sum").innerHTML = [["clean", cnt.ok, HC_SUM.ok], ["dead", cnt.warn, HC_SUM.warn], ["live", cnt.bad, HC_SUM.bad], ["", cnt.na, HC_SUM.na]].map(function (b) {
       return '<div class="rep-box"' + (b[0] ? ' data-k="' + b[0] + '"' : "") + "><b>" + b[1] + "</b><span>" + b[2] + "</span></div>";
     }).join("");
     $("hc-list").innerHTML = items.join("");
@@ -4341,13 +4342,13 @@ details.steps ol > li { min-width: 0; }
     hideErr(er);
     if (!store || !store.wipeAll || state.canWrite === false) { showErr(er, "غير متاح الآن."); return; }
     var nm = cleanWhName(whNameOf(whActive) || state.layout.name || "المخزن");
-    var typed = window.prompt("سيتم حذف كل بيانات «" + nm + "» نهائيًا (" + lotsText(state.lots.size) + " مسجّل) مع الأرشيف والتبخير والإجراءات والقراءات والإعدادات، ويرجع البرنامج من الصفر.\nصدّر نسخة إكسل قبل الحذف لو محتاجها.\nاكتب كلمة «حذف» للتأكيد:");
+    var typed = window.prompt("سيتم حذف كل بيانات «" + nm + "» نهائيًا (" + lotsText(state.lots.size) + " مسجّل) مع الأرشيف والتبخير والإجراءات والقراءات وخطة الهاسب، ويرجع من الصفر. باقي المخازن لا تتأثر.\nصدّر نسخة إكسل قبل الحذف لو محتاجها.\nاكتب كلمة «حذف» للتأكيد:");
     if (typed === null) return;
     if (typed.trim() !== "حذف") { showErr(er, "الكلمة غير مطابقة. لم يتم الحذف."); return; }
     btn.disabled = true;
     store.wipeAll().then(function () {
       try {
-        [FIFO_KEY, INSP_KEY, hcKey()].concat(SIGN_KEYS).forEach(function (k) { localStorage.removeItem(k); });
+        localStorage.removeItem(hcKey());
         Object.keys(localStorage).forEach(function (k) { if (k.indexOf("lots-rep-notes-" + whActive + "-") === 0) localStorage.removeItem(k); });
       } catch (e) { /* ignore */ }
       location.reload();
